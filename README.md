@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/og.png" alt="clientside-containers — containers that run in the browser" width="820" />
+</p>
+
 # clientside-containers
 
 Containers that run **entirely in your browser**. No server, no backend, no
@@ -16,6 +20,12 @@ The dashboard is a grid of containers. Each card opens into an interface (like a
 remote desktop, but for that container), and each card has a settings gear for
 per-container configuration. The tiers are a spectrum sized by how much OS you
 need — the smallest is the NVIDIA agent runtime:
+
+<p align="center">
+  <img src="docs/images/tier-agent.png" alt="Agent sandbox tier" width="32%" />
+  <img src="docs/images/tier-app.png" alt="App bottle tier" width="32%" />
+  <img src="docs/images/tier-mini-os.png" alt="Mini OS tier" width="32%" />
+</p>
 
 | Tier | What runs | Interface |
 | --- | --- | --- |
@@ -52,6 +62,25 @@ The **New container** dialog offers preconfigured choices per tier:
   launching a GUI app like OpenTTD needs a desktop-capable image.)
 
 ## How it works
+
+Everything below runs inside the visitor's browser tab. The dashboard renders a
+grid of containers; each tier maps to a real client-side runtime, and state is
+kept in IndexedDB so containers survive reloads.
+
+```mermaid
+flowchart TB
+  subgraph Tab [Browser tab]
+    Dashboard["Dashboard grid (app/page.tsx)"]
+    Dashboard --> Agent["Agent sandbox"]
+    Dashboard --> App["App bottle"]
+    Dashboard --> MiniOS["Mini OS"]
+    Agent --> Worker["Web Worker\npublic/workers/headless-worker.js"]
+    Worker --> Policy["OpenShell YAML policy\nlib/policy.ts"]
+    App --> V86["v86 / WASM x86 guest\npublic/v86/*"]
+    MiniOS --> V86
+    Dashboard --> IDB["IndexedDB\nlib/containers-db.ts"]
+  end
+```
 
 ```
 app/
@@ -116,6 +145,14 @@ STATIC_EXPORT=true npm run build   # static export to out/
 - `PAGES_BASE_PATH` sets the base path when serving under a sub-path (e.g.
   `/clientside-containers` on GitHub Pages); it is inlined for client-side asset
   URLs as `NEXT_PUBLIC_BASE_PATH`.
+
+## Roadmap
+
+The scope is open-ended: bring the ease of cloud-agent hosting into the browser,
+in isolated environments, for any agent, app, or OS, on any device. See
+[ROADMAP.md](./ROADMAP.md) for the horizons — from making each tier more real to
+orchestrating, snapshotting, and sharing containers. It is a living document with
+no defined end.
 
 ## License
 
