@@ -1,0 +1,9 @@
+# Default owner for everything in the repository.
+* @thyfriendlyfox
+
+# The autonomous loop, its gates, and its merge rules. A change here changes
+# what can reach main without a human, so review it closely.
+/.github/workflows/          @thyfriendlyfox
+/docs/autonomous-loop.md     @thyfriendlyfox
+/AGENTS.md                   @thyfriendlyfox
+/SECURITY.md                 @thyfriendlyfox

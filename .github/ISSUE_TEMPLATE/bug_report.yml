@@ -1,0 +1,72 @@
+name: Bug report
+description: Report something that does not work.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Write in short, plain sentences. One idea per sentence.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Describe the fault. Give the exact error text if you have it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to repeat the fault
+      value: |
+        1. Open the dashboard.
+        2. Create a container of tier ...
+        3. Click ...
+        4. See the fault.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Container tier
+      options:
+        - Agent sandbox
+        - App bottle
+        - Mini OS
+        - The dashboard itself
+        - Not related to a tier
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: Where the app runs
+      description: The published page, a local dev server, or your own static host.
+      placeholder: "https://thyfriendlyfox.github.io/clientside-containers/"
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: "Chrome 139 on Windows 11"
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Browser console output
+      description: Open the developer tools, copy any error, and paste it here.
+      render: text
