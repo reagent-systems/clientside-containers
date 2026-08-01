@@ -13,7 +13,12 @@ interface LogLine {
 
 const SAMPLES = [
   { label: "GET /health", method: "GET", path: "/health", body: "" },
-  { label: "egress github", method: "POST", path: "/egress", body: '{ "host": "api.github.com", "method": "GET" }' },
+  {
+    label: "egress github",
+    method: "POST",
+    path: "/egress",
+    body: '{ "host": "api.github.com", "method": "GET", "path": "/repos/NVIDIA/OpenShell" }',
+  },
   { label: "egress evil.com", method: "POST", path: "/egress", body: '{ "host": "evil.com", "method": "POST" }' },
   { label: "eval", method: "POST", path: "/eval", body: '{ "expr": "2 + 40" }' },
 ];

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_AGENT_POLICY,
   DEFAULT_AGENT_POLICY_YAML,
+  egressUrl,
   evaluateEgress,
   parsePolicy,
   policyToYaml,
@@ -99,5 +100,27 @@ describe("evaluateEgress", () => {
     expect(
       evaluateEgress(DEFAULT_AGENT_POLICY, { host: "evil.api.github.com", method: "GET" }).verdict,
     ).toBe("deny");
+  });
+});
+
+describe("egressUrl", () => {
+  it("defaults to the host's root path", () => {
+    expect(egressUrl("api.github.com")).toBe("https://api.github.com/");
+  });
+
+  it("keeps a path that already starts with a slash", () => {
+    expect(egressUrl("api.github.com", "/repos/octocat/Hello-World")).toBe(
+      "https://api.github.com/repos/octocat/Hello-World",
+    );
+  });
+
+  it("adds the missing leading slash", () => {
+    expect(egressUrl("api.github.com", "repos/octocat/Hello-World")).toBe(
+      "https://api.github.com/repos/octocat/Hello-World",
+    );
+  });
+
+  it("treats an empty path the same as no path", () => {
+    expect(egressUrl("pypi.org", "")).toBe("https://pypi.org/");
   });
 });

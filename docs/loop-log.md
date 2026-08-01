@@ -25,6 +25,7 @@ repeats work and never raises an idea that was already rejected.
 | Cycle | Date | Outcome | Change | PR | Score | Follow-up |
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | 2026-08-01 | shipped | Set up the loop itself: a test suite, CI gates, an auto-merge gate, and the open-source files the repository was missing. | — | — | The first scheduled cycle runs the loop from section 3.1 of the specification. |
+| 1 | 2026-08-01 | shipped | An agent container's allowed egress calls now really reach the network and report the real result, instead of only returning a policy verdict. | — | 17/20 | Cycle 0's CI/auto-merge/label infrastructure has not reached `main` yet, so this cycle could not open a self-merging pull request; the change was pushed straight to the branch that carries the loop spec. Runners-up filed as issues [#14](https://github.com/reagent-systems/clientside-containers/issues/14) (close the `/eval` fetch bypass, 13/20) and [#15](https://github.com/reagent-systems/clientside-containers/issues/15) (preview an agent preset's policy before creating it, 12/20). |
 
 ---
 

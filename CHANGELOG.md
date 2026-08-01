@@ -10,6 +10,13 @@ The [autonomous daily loop](./docs/autonomous-loop.md) adds an entry under
 
 ## [Unreleased]
 
+### Changed
+
+- The agent tier's egress now really happens: an allowed `/egress` call
+  performs the fetch and returns its real HTTP status (or the CORS/network
+  failure), instead of returning only the policy's allow/deny verdict. A
+  denied call is never attempted.
+
 ### Added
 
 - A unit test suite on Vitest, covering the policy engine, the container
