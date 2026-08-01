@@ -309,7 +309,37 @@ The loop watches itself. Act on these signals in the survey step:
 
 ---
 
-## 8. Where the schedule lives
+## 8. What the repository must allow
+
+The loop cannot merge anything until these settings are correct. Check them
+once, after this specification first reaches `main`.
+
+| Setting | Where | Required value | Why |
+| --- | --- | --- | --- |
+| Workflow permissions | Settings → Actions → General | **Read and write permissions** | A workflow cannot request more permission than the repository allows. With read-only, the merge step fails with `403`. |
+| Labels | Applied automatically | The `automated` label must exist | The merge gate reads it. `.github/workflows/sync-labels.yml` creates it from `.github/labels.yml` on the first push to `main`. |
+| Actions enabled | Settings → Actions → General | Allow all actions | CI, CodeQL, and the merge gate all run as Actions. |
+| Default branch | Settings → General | `main` | Both the CI trigger and the merge gate name `main`. |
+
+Branch protection is **optional**, and the loop does not need it. The merge gate
+already refuses a pull request that lacks the `automated` label, comes from a
+fork, or points at a commit CI did not verify. If you do add branch protection,
+make `CI / verify` and both `CI / build` jobs required checks, and allow GitHub
+Actions to push to `main`. Without that last permission, protection blocks the
+loop's own merge.
+
+### If the loop cannot merge
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| The merge step logs `403` | Workflow permissions are read-only | Set them to read and write. |
+| The log says `no automated label` | The label sync has not run | Run the **Sync labels** workflow by hand, then add the label. |
+| The log says `a required check or review blocks the merge` | Branch protection wants a review, or a required check never ran | Add the missing check to CI, or let Actions bypass the review rule. |
+| The log says `head moved after CI ran` | A commit landed on the branch after CI passed | Correct behaviour. CI runs again on the new commit, and the merge follows. |
+
+---
+
+## 9. Where the schedule lives
 
 The trigger is a scheduled Claude Code routine. It fires once a day at 09:00
 UTC and starts a fresh session. That session reads this file and runs the loop
