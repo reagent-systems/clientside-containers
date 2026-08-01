@@ -1,0 +1,31 @@
+version: 2
+
+updates:
+  # Application dependencies.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+    labels: [dependencies, automated]
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps(dev)"
+    groups:
+      # One pull request for the routine minor and patch bumps. Major bumps
+      # stay separate, because they need a closer look.
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # The actions used by the workflows in this repository.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    labels: [ci, automated]
+    commit-message:
+      prefix: "ci"

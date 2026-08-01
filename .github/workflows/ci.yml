@@ -1,0 +1,78 @@
+name: CI
+
+# The quality gate for every change. The autonomous daily loop merges a pull
+# request only after all jobs here pass. Keep these jobs fast: do not download
+# the large v86 disk images, because the build does not need them.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, lint, and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+  build:
+    name: Build (${{ matrix.mode }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The server-capable build, used when self-hosting on Node.
+          - mode: server
+            static_export: "false"
+            base_path: ""
+          # The static export that GitHub Pages publishes, under a sub-path.
+          - mode: static-export
+            static_export: "true"
+            base_path: /clientside-containers
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          STATIC_EXPORT: ${{ matrix.static_export }}
+          PAGES_BASE_PATH: ${{ matrix.base_path }}
+        run: npm run build
+
+      # A static export that lost its runtime assets or its base path still
+      # builds, but every container fails to boot in the browser. Check both.
+      - name: Check the static export carries the runtime assets
+        if: matrix.mode == 'static-export'
+        run: bash scripts/check-static-export.sh "${{ matrix.base_path }}"
