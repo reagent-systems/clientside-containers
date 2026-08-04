@@ -29,7 +29,7 @@ need — the smallest is the NVIDIA agent runtime:
 
 | Tier | What runs | Interface |
 | --- | --- | --- |
-| **Agent sandbox** | The OpenShell runtime for autonomous agents ([NemoClaw](https://github.com/NVIDIA/NemoClaw) + [OpenShell](https://github.com/NVIDIA/OpenShell)), in a **Web Worker**, governed by a declarative YAML policy. | Policy editor + API/egress console. |
+| **Agent sandbox** | The OpenShell runtime for autonomous agents ([NemoClaw](https://github.com/NVIDIA/NemoClaw) + [OpenShell](https://github.com/NVIDIA/OpenShell)), in a **Web Worker**, governed by a declarative YAML policy. Allowed egress is a real browser `fetch`; denials and CORS failures are reported honestly. | Policy editor + API/egress console. |
 | **App bottle** | A single program inside a minified Linux. | The program's terminal. |
 | **Mini OS** | A full **minified Linux** booted in your browser (real x86 via WebAssembly). | The Linux screen + shell. |
 
@@ -76,6 +76,7 @@ flowchart TB
     Dashboard --> MiniOS["Mini OS"]
     Agent --> Worker["Web Worker\npublic/workers/headless-worker.js"]
     Worker --> Policy["OpenShell YAML policy\nlib/policy.ts"]
+    Worker --> Fetch["Real fetch egress\nallow → network, deny → 403"]
     App --> V86["v86 / WASM x86 guest\npublic/v86/*"]
     MiniOS --> V86
     Dashboard --> IDB["IndexedDB\nlib/containers-db.ts"]
@@ -94,7 +95,7 @@ components/
   NewContainerMenu.tsx Pick a tier and create
   runtime/
     EmulatorScreen.tsx  Mounts v86: serial terminal (Linux) or VGA (Windows)
-    AgentConsole.tsx    Agent tier: YAML policy editor + API/egress console
+    AgentConsole.tsx    Agent tier: YAML policy editor + honest-egress console
 lib/
   container.ts      Container model, tiers, bottled-app catalog
   containers-db.ts  IndexedDB persistence (containers survive reloads)
@@ -106,7 +107,7 @@ lib/
   base-path.ts      Base path for static assets under a sub-path
 public/
   v86/              v86 engine (libv86.mjs, v86.wasm), BIOS, Linux bzImage
-  workers/          headless-worker.js (agent runtime)
+  workers/          headless-worker.js (agent runtime + real fetch egress)
 ```
 
 State (your containers and their settings) is stored in **IndexedDB**, so it

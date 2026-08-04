@@ -51,7 +51,7 @@ export function ContainerStage({ container, onClose, onStatus, onPreview }: Prop
       </div>
       <footer className="border-t border-gray-alpha-400 bg-background-100 px-4 py-1.5 text-center text-copy-13 text-gray-700">
         {container.tier === "agent"
-          ? "OpenShell-style agent runtime — API calls and policy egress decisions."
+          ? "OpenShell-style agent runtime — real policy-gated fetch, honest CORS."
           : container.tier === "app"
             ? "Linux container running its config. Type into the terminal once the prompt appears."
             : "x86 OS via WebAssembly. Click the screen, then type."}

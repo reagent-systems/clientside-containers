@@ -48,6 +48,10 @@ The foundation is already live in the browser:
 
 - **Agent sandbox** — the OpenShell agent runtime in a Web Worker, governed by a
   declarative YAML policy, with a policy editor and an API/egress console.
+- **Honest egress** — the agent worker performs real `fetch`es for hosts its
+  policy (and networking mode) allow, returns status/headers/body when the
+  browser permits, and reports `cors_or_network` failures instead of inventing
+  responses. Denied hosts stay 403.
 - **App bottle** — a single program inside a minified Linux, provisioned by a
   config (command sequence) after boot.
 - **Mini OS** — a full minified Linux booted with v86 (real x86 via WASM):
@@ -60,9 +64,6 @@ The foundation is already live in the browser:
 
 Depth over surface area. Take what exists and make it genuinely capable.
 
-- **Honest egress.** The agent worker performs the `fetch`es its policy allows,
-  surfaces CORS results truthfully, and denies the rest by policy — no faked
-  network responses.
 - **Boot straight into an app.** App bottles launch their program on boot and
   present its terminal directly, skipping the generic shell.
 - **More bottled apps.** Grow the app catalog beyond the current set.

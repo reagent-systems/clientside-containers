@@ -13,10 +13,34 @@ interface LogLine {
 
 const SAMPLES = [
   { label: "GET /health", method: "GET", path: "/health", body: "" },
-  { label: "egress github", method: "POST", path: "/egress", body: '{ "host": "api.github.com", "method": "GET" }' },
-  { label: "egress evil.com", method: "POST", path: "/egress", body: '{ "host": "evil.com", "method": "POST" }' },
+  {
+    label: "fetch github",
+    method: "POST",
+    path: "/egress",
+    body: '{ "url": "https://api.github.com/zen", "method": "GET" }',
+  },
+  {
+    label: "deny evil.com",
+    method: "POST",
+    path: "/egress",
+    body: '{ "url": "https://evil.com/", "method": "GET" }',
+  },
+  {
+    label: "cors probe",
+    method: "POST",
+    path: "/egress",
+    body: '{ "url": "https://registry.npmjs.org/react", "method": "GET" }',
+  },
   { label: "eval", method: "POST", path: "/eval", body: '{ "expr": "2 + 40" }' },
 ];
+
+function summarizeBody(body: unknown): string {
+  try {
+    return JSON.stringify(body);
+  } catch {
+    return String(body);
+  }
+}
 
 export function AgentConsole({
   container,
@@ -40,20 +64,21 @@ export function AgentConsole({
   const onPreviewRef = useRef(onPreview);
   onPreviewRef.current = onPreview;
 
-  const applyPolicy = useCallback(
-    (text: string) => {
-      try {
-        const parsed = parsePolicy(text);
-        workerRef.current?.postMessage({ type: "policy", policy: parsed });
-        setPolicyError(null);
-        return true;
-      } catch (err) {
-        setPolicyError((err as Error).message);
-        return false;
-      }
-    },
-    [],
-  );
+  const applyPolicy = useCallback((text: string) => {
+    try {
+      const parsed = parsePolicy(text);
+      workerRef.current?.postMessage({ type: "policy", policy: parsed });
+      setPolicyError(null);
+      return true;
+    } catch (err) {
+      setPolicyError((err as Error).message);
+      return false;
+    }
+  }, []);
+
+  const applyNetwork = useCallback((network: Container["settings"]["network"]) => {
+    workerRef.current?.postMessage({ type: "network", network });
+  }, []);
 
   useEffect(() => {
     const worker = new Worker(`${BASE_PATH}/workers/headless-worker.js`, { type: "classic" });
@@ -63,8 +88,15 @@ export function AgentConsole({
       if (msg.type === "ready") {
         setReady(true);
         onStatus?.("running");
+        applyNetwork(container.settings.network);
         applyPolicy(container.settings.policyYaml ?? DEFAULT_AGENT_POLICY_YAML);
-        setLog((l) => [...l, { dir: "sys", text: "agent runtime ready — policy applied" }]);
+        setLog((l) => [
+          ...l,
+          {
+            dir: "sys",
+            text: `agent runtime ready — policy applied, network=${container.settings.network}`,
+          },
+        ]);
       } else if (msg.type === "response") {
         const resolve = pending.current.get(msg.id);
         if (resolve) {
@@ -79,6 +111,11 @@ export function AgentConsole({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [container.id]);
+
+  useEffect(() => {
+    if (!ready) return;
+    applyNetwork(container.settings.network);
+  }, [ready, container.settings.network, applyNetwork]);
 
   useEffect(() => {
     if (!onPreviewRef.current || !log.length) return;
@@ -102,10 +139,13 @@ export function AgentConsole({
       }
     }
     const id = ++reqId.current;
-    setLog((l) => [...l, { dir: "in", text: `${method} ${path}${parsed !== undefined ? ` ${JSON.stringify(parsed)}` : ""}` }]);
+    setLog((l) => [
+      ...l,
+      { dir: "in", text: `${method} ${path}${parsed !== undefined ? ` ${JSON.stringify(parsed)}` : ""}` },
+    ]);
     const p = new Promise<{ status: number; body: unknown }>((resolve) => pending.current.set(id, resolve));
     worker.postMessage({ type: "request", id, payload: { method, path, body: parsed } });
-    p.then((res) => setLog((l) => [...l, { dir: "out", text: `${res.status} ${JSON.stringify(res.body)}` }]));
+    p.then((res) => setLog((l) => [...l, { dir: "out", text: `${res.status} ${summarizeBody(res.body)}` }]));
   }, [method, path, body]);
 
   function savePolicy() {
@@ -150,7 +190,7 @@ export function AgentConsole({
                 <span className="select-none text-gray-700">
                   {line.dir === "in" ? "→ " : line.dir === "out" ? "← " : "• "}
                 </span>
-                {line.text}
+                <span className="break-all whitespace-pre-wrap">{line.text}</span>
               </div>
             ))
           )}
@@ -173,11 +213,22 @@ export function AgentConsole({
             ))}
           </div>
           <div className="flex gap-2">
-            <select value={method} onChange={(e) => setMethod(e.target.value)} className="input w-24" aria-label="HTTP method">
+            <select
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              className="input w-24"
+              aria-label="HTTP method"
+            >
               <option>GET</option>
               <option>POST</option>
             </select>
-            <input value={path} onChange={(e) => setPath(e.target.value)} className="input flex-1" placeholder="/health" aria-label="Request path" />
+            <input
+              value={path}
+              onChange={(e) => setPath(e.target.value)}
+              className="input flex-1"
+              placeholder="/health"
+              aria-label="Request path"
+            />
             <button type="button" onClick={send} disabled={!ready} className="btn-primary">
               Send
             </button>
@@ -186,7 +237,7 @@ export function AgentConsole({
             value={body}
             onChange={(e) => setBody(e.target.value)}
             className="input mt-2 font-mono text-copy-13"
-            placeholder='JSON body, e.g. { "host": "api.github.com", "method": "GET" }'
+            placeholder='JSON body, e.g. { "url": "https://api.github.com/zen", "method": "GET" }'
             aria-label="Request body"
           />
         </div>
