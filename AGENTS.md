@@ -38,8 +38,9 @@ Run this loop for every change. Keep changes small and shippable.
    Then confirm the static export emitted runtime assets:
    `out/v86/*`, `out/workers/*`, and that `/clientside-containers` is inlined.
 5. **Manual smoke (browser):** `npm run dev`, then: create one container of each
-   tier, open it (agent answers `GET /health` and denies `egress evil.com`;
-   mini-OS boots to a shell), edit settings, reload and confirm persistence.
+   tier, open it (agent `GET /health`, `POST /egress` to github returns a real
+   fetch body or honest `cors_or_network`, deny `evil.com`; mini-OS boots to a
+   shell), edit settings, reload and confirm persistence.
 6. **Commit** in logical chunks with clear messages.
 7. **Push** `git push -u origin <branch>` and **open/update a PR** to `main`.
 8. **Review** the diff against the constraints; fix anything that regresses the
@@ -83,9 +84,25 @@ public/workers/                agent worker (headless-worker.js)
 
 ## Good next steps
 
-- Real egress: have the agent worker perform allowed `fetch`es and surface CORS
-  honestly; deny the rest by policy.
 - More bottled apps; boot straight into a chosen app.
 - Persist/restore v86 state (save_state) so a mini-OS resumes where it left off.
 - Larger images behind a tier (desktop/Xorg) with the same grid UX.
 - Networking for v86 (virtio + a relay) as an explicit, off-by-default setting.
+
+## Cursor Cloud specific instructions
+
+- Dependencies are refreshed automatically on startup via the environment update
+  script (`npm install`). No manual install step is needed at the start of a run.
+- Run the dev server with `npm run dev` (serves on http://localhost:3000). All
+  standard commands (`typecheck`, `lint`, `build`, static export) are in the
+  **Development loop** section above — use those, don't reinvent them.
+- There is **no automated test suite**; quality gates are `npm run typecheck`,
+  `npm run lint`, `npm run build`, `STATIC_EXPORT=true PAGES_BASE_PATH=/clientside-containers npm run build`,
+  plus the browser smoke test in the loop above.
+- `npm run fetch-v86-images` is an optional, heavy (~694 MB) download used only
+  by the Ubuntu 10.04 mini-OS preset; skip it for normal dev/build. The
+  Buildroot and Windows 1.01 images are already bundled under `public/v86/`, so
+  the Mini OS tier boots to a shell without any fetch step.
+- End-to-end verification requires a browser (WebAssembly + Web Workers +
+  IndexedDB); the container tiers actually execute client-side, so use the GUI
+  smoke test rather than trying to exercise tiers headlessly.

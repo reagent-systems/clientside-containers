@@ -77,11 +77,50 @@ export function policyToYaml(policy: AgentPolicy): string {
   return yaml.dump(policy, { lineWidth: 80 });
 }
 
+export type NetworkMode = "off" | "restricted" | "open";
+
+/** Resolve host + absolute URL for an egress request body. */
+export function resolveEgressTarget(body: {
+  url?: string;
+  host?: string;
+  path?: string;
+  method?: string;
+}): { url: string; host: string; method: string } | { error: string } {
+  const method = String(body.method || "GET").toUpperCase();
+  const rawUrl = typeof body.url === "string" ? body.url.trim() : "";
+  let host = typeof body.host === "string" ? body.host.trim() : "";
+  let path = typeof body.path === "string" ? body.path : "/";
+
+  if (rawUrl) {
+    let parsed: URL;
+    try {
+      parsed = new URL(rawUrl);
+    } catch {
+      return { error: "invalid url" };
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return { error: "only http(s) urls are allowed" };
+    }
+    return { url: parsed.href, host: parsed.hostname, method };
+  }
+
+  if (!host) return { error: "url or host is required" };
+  if (!path.startsWith("/")) path = `/${path}`;
+  return { url: `https://${host}${path}`, host, method };
+}
+
 export function evaluateEgress(
   policy: AgentPolicy,
   req: { host: string; method: string },
+  network: NetworkMode = "restricted",
 ): { verdict: Verdict; reason: string } {
   const method = req.method.toUpperCase();
+  if (network === "off") {
+    return { verdict: "deny", reason: "networking is off" };
+  }
+  if (network === "open") {
+    return { verdict: "allow", reason: "networking is open" };
+  }
   const match = policy.network.allow.find(
     (r) => r.host === req.host && (r.methods.includes(method) || r.methods.includes("*")),
   );
