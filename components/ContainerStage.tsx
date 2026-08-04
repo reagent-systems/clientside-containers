@@ -10,9 +10,10 @@ interface Props {
   onClose: () => void;
   onStatus: (status: Container["status"]) => void;
   onPreview: (preview: ContainerPreview) => void;
+  onContainerChange?: (container: Container) => void;
 }
 
-export function ContainerStage({ container, onClose, onStatus, onPreview }: Props) {
+export function ContainerStage({ container, onClose, onStatus, onPreview, onContainerChange }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -44,14 +45,19 @@ export function ContainerStage({ container, onClose, onStatus, onPreview }: Prop
       </header>
       <div className="flex-1 overflow-hidden bg-black">
         {container.tier === "agent" ? (
-          <AgentConsole container={container} onStatus={onStatus} onPreview={onPreview} />
+          <AgentConsole
+            container={container}
+            onStatus={onStatus}
+            onPreview={onPreview}
+            onContainerChange={onContainerChange}
+          />
         ) : (
           <EmulatorScreen container={container} onStatus={onStatus} onPreview={onPreview} />
         )}
       </div>
       <footer className="border-t border-gray-alpha-400 bg-background-100 px-4 py-1.5 text-center text-copy-13 text-gray-700">
         {container.tier === "agent"
-          ? "OpenShell-style agent runtime — API calls and policy egress decisions."
+          ? "OpenShell-style agent runtime — persistent chat, tools, policy-gated fetch."
           : container.tier === "app"
             ? "Linux container running its config. Type into the terminal once the prompt appears."
             : "x86 OS via WebAssembly. Click the screen, then type."}

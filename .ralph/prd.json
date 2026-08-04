@@ -1,0 +1,63 @@
+{
+  "name": "agent-sandbox-persistent-runnable",
+  "goal": "Make the Agent sandbox tier persist its session and actually run an agent (chat + tool loop) under OpenShell policy in the browser.",
+  "branch": "cursor/agent-sandbox-ralph-62fa",
+  "completion_promise": "COMPLETE",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "Honest egress foundation",
+      "description": "Worker performs real fetch for allowlisted hosts, surfaces cors_or_network, denies the rest; network mode off/restricted/open. Needed before agent model calls.",
+      "acceptance": [
+        "POST /egress with url performs real fetch when allowed",
+        "Denied hosts return 403 without fetch",
+        "network mode wired from container settings"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-002",
+      "title": "Persist agent session model",
+      "description": "Extend Container + IndexedDB with agentSession (messages, console log) and agent settings (provider, model, apiBaseUrl, apiKey).",
+      "acceptance": [
+        "Container type includes agentSession and inference settings",
+        "saveContainer persists them; reopen restores them",
+        "buildContainer initializes empty session for agent tier"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-003",
+      "title": "Worker agent turn + tools",
+      "description": "Add POST /agent/turn with OpenAI-compatible and Anthropic request shapes, tool loop (http_request, eval_js, fs_read/write/list) under policy, virtual FS in worker.",
+      "acceptance": [
+        "/agent/turn calls model API via policy-gated fetch",
+        "Tools execute for real; policy denies block tools that egress",
+        "No invented assistant text when the model call fails"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-004",
+      "title": "Chat UI + settings",
+      "description": "AgentConsole: chat panel as primary, policy sidebar, provider/model/key/base URL fields, persist messages on each turn, restore on mount.",
+      "acceptance": [
+        "User can send a chat message and see the assistant reply or honest error",
+        "Reload restores prior messages",
+        "No privacy reassurance copy"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-005",
+      "title": "Presets, docs, verify",
+      "description": "Presets include systemPrompt + default provider/model; update ROADMAP/AGENTS/README; typecheck/lint/both builds; browser smoke.",
+      "acceptance": [
+        "Presets seed system prompt and defaults",
+        "Docs updated",
+        "Builds green and smoke covers persist + agent turn path"
+      ],
+      "passes": false
+    }
+  ]
+}
