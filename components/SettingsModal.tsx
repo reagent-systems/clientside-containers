@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TIERS, tierUsesEmulator, type Container, type ContainerSettings } from "@/lib/container";
+import type { AgentProvider } from "@/lib/agent-session";
 
 interface Props {
   container: Container;
@@ -23,6 +24,10 @@ export function SettingsModal({ container, onSave, onDelete, onClose }: Props) {
   const [memoryMb, setMemoryMb] = useState(container.settings.memoryMb);
   const [network, setNetwork] = useState(container.settings.network);
   const [autostart, setAutostart] = useState(container.settings.autostart);
+  const [provider, setProvider] = useState<AgentProvider>(container.settings.provider ?? "anthropic");
+  const [model, setModel] = useState(container.settings.model ?? "");
+  const [apiBaseUrl, setApiBaseUrl] = useState(container.settings.apiBaseUrl ?? "");
+  const [apiKey, setApiKey] = useState(container.settings.apiKey ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
@@ -71,6 +76,38 @@ export function SettingsModal({ container, onSave, onDelete, onClose }: Props) {
           ))}
         </select>
 
+        {container.tier === "agent" && (
+          <>
+            <label className="label mt-4">Provider</label>
+            <select
+              className="input"
+              value={provider}
+              onChange={(e) => setProvider(e.target.value as AgentProvider)}
+            >
+              <option value="anthropic">anthropic</option>
+              <option value="openai">openai</option>
+              <option value="openai-compatible">openai-compatible</option>
+            </select>
+            <label className="label mt-4">Model</label>
+            <input className="input" value={model} onChange={(e) => setModel(e.target.value)} />
+            <label className="label mt-4">API base URL</label>
+            <input
+              className="input"
+              value={apiBaseUrl}
+              onChange={(e) => setApiBaseUrl(e.target.value)}
+              placeholder="optional OpenAI-compatible base"
+            />
+            <label className="label mt-4">API key</label>
+            <input
+              className="input font-mono"
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              autoComplete="off"
+            />
+          </>
+        )}
+
         <label className="mt-4 flex items-center gap-2 text-copy-14 text-gray-1000">
           <input
             type="checkbox"
@@ -101,7 +138,14 @@ export function SettingsModal({ container, onSave, onDelete, onClose }: Props) {
             </button>
             <button
               type="button"
-              onClick={() => onSave(name, { memoryMb, network, autostart })}
+              onClick={() =>
+                onSave(name, {
+                  memoryMb,
+                  network,
+                  autostart,
+                  ...(container.tier === "agent" ? { provider, model, apiBaseUrl, apiKey } : {}),
+                })
+              }
               className="btn-primary btn-small"
             >
               Save

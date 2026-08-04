@@ -9,6 +9,7 @@
 // progressively larger minified OSes in the browser, on any device.
 
 import { DEFAULT_AGENT_POLICY_YAML } from "./policy";
+import { emptyAgentSession, type AgentProvider, type AgentSession } from "./agent-session";
 import { getAgentPreset, policyYamlForAgent } from "./agents";
 import { getOsImage } from "./os-images";
 import { getConfig } from "./configs";
@@ -26,6 +27,14 @@ export interface ContainerSettings {
   autostart: boolean;
   /** OpenShell-style policy (agent tier). YAML text. */
   policyYaml?: string;
+  /** Inference provider for agent tier turns. */
+  provider?: AgentProvider;
+  /** Model id sent to the provider. */
+  model?: string;
+  /** Optional OpenAI-compatible base URL (no trailing slash required). */
+  apiBaseUrl?: string;
+  /** Provider API key — stored only in this browser's IndexedDB. */
+  apiKey?: string;
 }
 
 /** A thumbnail of a container's interface, captured while it ran. */
@@ -51,6 +60,8 @@ export interface Container {
   settings: ContainerSettings;
   /** Last captured preview of the running interface. */
   preview?: ContainerPreview;
+  /** Persisted agent chat/console session (agent tier). */
+  agentSession?: AgentSession;
 }
 
 export const TIERS: Record<
@@ -60,7 +71,7 @@ export const TIERS: Record<
   agent: {
     label: "Agent sandbox",
     blurb:
-      "The OpenShell runtime for autonomous agents — answers API calls, governed by a declarative YAML policy. The smallest tier.",
+      "A policy-governed agent runtime — chat, tools, and egress under an OpenShell YAML policy. The smallest tier.",
     defaultMemoryMb: 64,
     icon: "M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z",
   },
@@ -84,6 +95,10 @@ export const DEFAULT_SETTINGS: Record<ContainerTier, ContainerSettings> = {
     network: "restricted",
     autostart: false,
     policyYaml: DEFAULT_AGENT_POLICY_YAML,
+    provider: "anthropic",
+    model: "claude-sonnet-4-20250514",
+    apiBaseUrl: "",
+    apiKey: "",
   },
   app: { memoryMb: 192, network: "restricted", autostart: false },
   minios: { memoryMb: 256, network: "restricted", autostart: false },
@@ -108,10 +123,24 @@ export function buildContainer(tier: ContainerTier, selectionId?: string, name?:
   let agentId: string | undefined;
   let imageId: string | undefined;
   let prefix: string;
+  let agentSession: AgentSession | undefined;
 
   if (tier === "agent") {
-    agentId = getAgentPreset(selectionId).id;
+    const preset = getAgentPreset(selectionId);
+    agentId = preset.id;
     settings.policyYaml = policyYamlForAgent(agentId);
+    settings.provider = preset.provider;
+    settings.model = preset.model;
+    settings.apiBaseUrl = preset.apiBaseUrl ?? "";
+    agentSession = emptyAgentSession();
+    if (preset.systemPrompt) {
+      agentSession.messages.push({
+        id: `msg-sys-${agentId}`,
+        role: "system",
+        content: preset.systemPrompt,
+        at: new Date().toISOString(),
+      });
+    }
     prefix = agentId;
   } else if (tier === "app") {
     configId = getConfig(selectionId).id;
@@ -134,6 +163,7 @@ export function buildContainer(tier: ContainerTier, selectionId?: string, name?:
     status: "stopped",
     createdAt: new Date().toISOString(),
     settings,
+    agentSession,
   };
 }
 
