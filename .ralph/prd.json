@@ -57,7 +57,7 @@
         "Docs updated",
         "Builds green and smoke covers persist + agent turn path"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

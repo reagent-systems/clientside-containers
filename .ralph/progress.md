@@ -23,3 +23,12 @@
 
 ### Iteration 2
 - Verify builds + browser smoke (persist + agent turn path).
+
+### Iteration 3
+- Browser smoke PASSED:
+  - Chat UI present; missing apiKey → honest `apiKey is required — config`
+  - Dummy key → real Anthropic `authentication_error` (not fake reply; browser access works with header)
+  - Health 200; evil.com 403
+  - Reload restores messages + API key + policy
+- All PRD stories US-001..US-005 marked passes: true
+- Acceptance criteria met → COMPLETE
