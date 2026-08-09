@@ -28,7 +28,7 @@ jobs:
       - run: npm ci
 
       - name: Cache Ubuntu v86 image
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: public/v86/images/ubuntu-1004-desktop-i386.iso
           key: v86-ubuntu-1004-${{ hashFiles('scripts/fetch-v86-images.sh') }}
