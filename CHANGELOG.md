@@ -10,6 +10,14 @@ The [autonomous daily loop](./docs/autonomous-loop.md) adds an entry under
 
 ## [Unreleased]
 
+### Fixed
+
+- A container's terminal (App bottle, Mini OS) no longer leaks raw escape-
+  sequence characters into its output. The ANSI CSI parser treated the `[`
+  introducer byte as if it could also be the sequence's final byte, so any
+  multi-byte CSI command (clear screen, erase line, cursor visibility, …) was
+  cut short after two bytes and the rest printed as literal text.
+
 ### Changed
 
 - The agent tier's egress now really happens: an allowed `/egress` call
