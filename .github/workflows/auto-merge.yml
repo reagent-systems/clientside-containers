@@ -1,0 +1,99 @@
+name: Auto-merge
+
+# Merges a pull request into main automatically, but only when every gate is
+# satisfied. The daily autonomous loop depends on this workflow to close the
+# loop without a human.
+#
+# The gates, all of which must hold:
+#   1. CI finished with the conclusion "success".
+#   2. The pull request carries the `automated` label.
+#   3. The pull request is open, is not a draft, and has no merge conflict.
+#   4. GitHub reports no failing or blocking review.
+#
+# This runs on `workflow_run`, so it uses the workflow file from the default
+# branch. A pull request cannot change the merge rules that judge it.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    name: Merge when CI is green
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find the pull request and merge it
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const { owner, repo } = context.repo;
+
+            // Only merge pull requests from this repository. A fork could not
+            // carry the label anyway, but be explicit about it.
+            if (run.head_repository.full_name !== `${owner}/${repo}`) {
+              core.info(`Skip: head is a fork (${run.head_repository.full_name}).`);
+              return;
+            }
+
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner, repo, commit_sha: run.head_sha,
+            });
+            const open = prs.filter((pr) => pr.state === 'open' && pr.base.ref === 'main');
+            if (open.length === 0) {
+              core.info(`Skip: no open pull request into main for ${run.head_sha}.`);
+              return;
+            }
+
+            for (const summary of open) {
+              const { data: pr } = await github.rest.pulls.get({
+                owner, repo, pull_number: summary.number,
+              });
+              const tag = `PR #${pr.number}`;
+
+              if (!pr.labels.some((l) => l.name === 'automated')) {
+                core.info(`Skip ${tag}: no \`automated\` label.`);
+                continue;
+              }
+              if (pr.draft) {
+                core.info(`Skip ${tag}: still a draft.`);
+                continue;
+              }
+              // The head must still be the commit CI verified. If the branch
+              // moved after CI passed, the new commit is unverified.
+              if (pr.head.sha !== run.head_sha) {
+                core.info(`Skip ${tag}: head moved to ${pr.head.sha} after CI ran.`);
+                continue;
+              }
+              if (pr.mergeable === false || pr.mergeable_state === 'dirty') {
+                core.warning(`Skip ${tag}: merge conflict with main.`);
+                continue;
+              }
+              if (pr.mergeable_state === 'blocked') {
+                core.warning(`Skip ${tag}: a required check or review blocks the merge.`);
+                continue;
+              }
+
+              await github.rest.pulls.merge({
+                owner, repo, pull_number: pr.number,
+                merge_method: 'squash',
+                commit_title: `${pr.title} (#${pr.number})`,
+                commit_message: pr.body ?? '',
+              });
+              core.notice(`Merged ${tag}: ${pr.title}`);
+
+              // Keep the branch list clean. A failure here is not important.
+              try {
+                await github.rest.git.deleteRef({
+                  owner, repo, ref: `heads/${pr.head.ref}`,
+                });
+              } catch (error) {
+                core.info(`Could not delete ${pr.head.ref}: ${error.message}`);
+              }
+            }

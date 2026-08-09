@@ -19,7 +19,32 @@ function evaluateEgress(req) {
   return { verdict: "deny", reason: `no rule permits ${method} ${host}` };
 }
 
-function handle(req) {
+function egressUrl(host, path) {
+  const p = path && path.length > 0 ? (path.startsWith("/") ? path : `/${path}`) : "/";
+  return `https://${host}${p}`;
+}
+
+// A denied call never reaches the network — the policy check runs first, and
+// only an "allow" verdict is followed by a real fetch. The result (status,
+// or the CORS/network failure) is surfaced as-is; nothing is faked.
+async function performEgress(body) {
+  const decision = evaluateEgress(body);
+  if (decision.verdict !== "allow") {
+    return { status: 403, body: decision };
+  }
+  const url = egressUrl(body.host, body.path);
+  try {
+    const res = await fetch(url, { method: String(body.method || "GET").toUpperCase() });
+    return { status: res.status, body: { ...decision, fetched: true, url, ok: res.ok } };
+  } catch (err) {
+    return {
+      status: 502,
+      body: { ...decision, fetched: true, url, error: String((err && err.message) || err) },
+    };
+  }
+}
+
+async function handle(req) {
   calls += 1;
   const path = (req && req.path) || "/";
   const method = ((req && req.method) || "GET").toUpperCase();
@@ -32,8 +57,7 @@ function handle(req) {
     return { status: 200, body: policy };
   }
   if (path === "/egress" && method === "POST" && body && body.host) {
-    const decision = evaluateEgress(body);
-    return { status: decision.verdict === "allow" ? 200 : 403, body: decision };
+    return performEgress(body);
   }
   if (path === "/echo") {
     return { status: 200, body: { method, path, echo: body ?? null } };
@@ -57,8 +81,9 @@ self.onmessage = (event) => {
     return;
   }
   if (msg.type === "request") {
-    const res = handle(msg.payload);
-    self.postMessage({ type: "response", id: msg.id, status: res.status, body: res.body });
+    Promise.resolve(handle(msg.payload)).then((res) => {
+      self.postMessage({ type: "response", id: msg.id, status: res.status, body: res.body });
+    });
   }
 };
 

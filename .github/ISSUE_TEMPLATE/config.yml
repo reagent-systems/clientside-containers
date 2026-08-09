@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/reagent-systems/clientside-containers/security/advisories/new
+    about: Report a security fault in private. Do not open a public issue for it.
+  - name: Roadmap
+    url: https://github.com/reagent-systems/clientside-containers/blob/main/ROADMAP.md
+    about: Read the planned horizons before you ask for a large feature.
+  - name: Questions and ideas
+    url: https://github.com/reagent-systems/clientside-containers/discussions
+    about: Ask a question, or discuss an idea that is not yet a proposal.

@@ -1,0 +1,82 @@
+# The labels this repository uses. `.github/workflows/sync-labels.yml` applies
+# this file to the repository whenever it changes on main.
+#
+# Edit this file to add, rename, or recolour a label. The sync creates a label
+# that is missing and updates one whose colour or description drifted. It never
+# deletes a label, so a label made by hand is safe.
+
+# --- Automation. The merge gate reads `automated`. ---------------------------
+- name: automated
+  color: "1D76DB"
+  description: Opened by automation. Merges on its own once CI is green.
+
+- name: loop-candidate
+  color: "5319E7"
+  description: A runner-up from the daily loop brainstorm. Not yet built.
+
+- name: loop-blocked
+  color: "B60205"
+  description: A loop cycle stopped here. It needs a decision before it can go on.
+
+# --- Kind of work ------------------------------------------------------------
+- name: bug
+  color: "D73A4A"
+  description: Something does not work.
+
+- name: enhancement
+  color: "A2EEEF"
+  description: A new capability, or a better one.
+
+- name: security
+  color: "B60205"
+  description: A security fault, or a hardening change.
+
+- name: performance
+  color: "FBCA04"
+  description: Speed, memory, or bundle size.
+
+- name: documentation
+  color: "0075CA"
+  description: Documentation only.
+
+- name: dependencies
+  color: "0366D6"
+  description: A dependency update.
+
+- name: ci
+  color: "BFD4F2"
+  description: Workflows, gates, and automation.
+
+# --- Which tier it touches ---------------------------------------------------
+- name: "tier: agent"
+  color: "C5DEF5"
+  description: The agent sandbox — the OpenShell runtime and its policy.
+
+- name: "tier: app"
+  color: "C5DEF5"
+  description: The app bottle — one program in a minified Linux.
+
+- name: "tier: minios"
+  color: "C5DEF5"
+  description: The Mini OS — a full minified Linux on v86.
+
+- name: "tier: dashboard"
+  color: "C5DEF5"
+  description: The container grid itself.
+
+# --- Triage ------------------------------------------------------------------
+- name: good first issue
+  color: "7057FF"
+  description: A small, self-contained change. A good place to start.
+
+- name: help wanted
+  color: "008672"
+  description: A maintainer would welcome a contributor here.
+
+- name: needs-repro
+  color: "D876E3"
+  description: Waiting for steps that repeat the fault.
+
+- name: wontfix
+  color: "FFFFFF"
+  description: Out of scope, or it breaks a hard constraint.

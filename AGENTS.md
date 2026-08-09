@@ -26,25 +26,50 @@ Run this loop for every change. Keep changes small and shippable.
 
 1. **Pick one improvement** that moves toward the product goal above. Prefer
    making an existing tier more real/capable over adding surface area.
-2. **Branch**: `git checkout -b cursor/<short-name>-1b48` off `main`.
+2. **Branch**: `git checkout -b loop/<yyyy-mm-dd>-<short-name>` off `main`.
 3. **Implement** with the constraints below.
-4. **Verify locally — all must pass:**
+4. **Write a test** for any pure logic you touch. Tests live in `test/` and run
+   on Vitest. A test must fail before your change and pass after it.
+5. **Verify locally — all must pass:**
    ```bash
    npm run typecheck
    npm run lint
+   npm test
    npm run build                                   # server build
    STATIC_EXPORT=true PAGES_BASE_PATH=/clientside-containers npm run build
+   bash scripts/check-static-export.sh /clientside-containers
    ```
-   Then confirm the static export emitted runtime assets:
-   `out/v86/*`, `out/workers/*`, and that `/clientside-containers` is inlined.
-5. **Manual smoke (browser):** `npm run dev`, then: create one container of each
+   The last command fails when the export loses `out/v86/*`, `out/workers/*`,
+   or the inlined `/clientside-containers` base path.
+6. **Manual smoke (browser):** `npm run dev`, then: create one container of each
    tier, open it (agent answers `GET /health` and denies `egress evil.com`;
    mini-OS boots to a shell), edit settings, reload and confirm persistence.
-6. **Commit** in logical chunks with clear messages.
-7. **Push** `git push -u origin <branch>` and **open/update a PR** to `main`.
-8. **Review** the diff against the constraints; fix anything that regresses the
+7. **Commit** in logical chunks, using Conventional Commits
+   (`feat(minios): ...`). See [CONTRIBUTING.md](./CONTRIBUTING.md).
+8. **Push** `git push -u origin <branch>` and **open/update a PR** to `main`.
+   CI repeats every check in step 5.
+9. **Review** the diff against the constraints; fix anything that regresses the
    loop (broken build, dead code, scope creep).
-9. **Repeat.**
+10. **Repeat.**
+
+## The daily loop runs this automatically
+
+A scheduled session runs this loop once a day, on its own. It spends up to two
+hours choosing the single highest-value change, hands that change to a build
+agent, and merges the result into `main` when CI is green.
+
+[**docs/autonomous-loop.md**](./docs/autonomous-loop.md) is the specification:
+how a change is chosen and scored, what the build agent may and may not do, and
+what must hold before a pull request merges by itself. Read it before you change
+anything under `.github/workflows/`.
+
+Two rules matter to any agent working here:
+
+- A pull request merges without a human only when it carries the `automated`
+  label **and** CI passes. Nothing else merges by itself.
+- Never weaken a gate to make it pass. Do not delete a test, skip a test, or
+  loosen a type to silence an error. Fixing a wrong gate is separate work, and
+  it needs its own pull request.
 
 ## Constraints (do not regress these)
 
@@ -58,7 +83,8 @@ Run this loop for every change. Keep changes small and shippable.
 - **No reassurance copy in the UI.** Do not add subtitles about where data runs,
   privacy, "local", "never leaves the device", etc. Document behavior in product
   docs instead.
-- **Keep it green.** typecheck + lint + both builds must pass before pushing.
+- **Keep it green.** typecheck + lint + tests + both builds must pass before
+  pushing. CI enforces this, and a red CI blocks the automatic merge.
 
 ## Map
 
@@ -79,6 +105,12 @@ lib/
   v86-runtime.ts               load + boot the guest
 public/v86/                    engine, BIOS, Linux bzImage
 public/workers/                agent worker (headless-worker.js)
+test/                          Vitest unit tests for the lib/ logic
+scripts/check-static-export.sh guards the export's runtime assets + base path
+docs/autonomous-loop.md        specification for the daily self-improvement loop
+docs/loop-log.md               one row per cycle of that loop
+.github/workflows/ci.yml       the gate: typecheck, lint, test, both builds
+.github/workflows/auto-merge.yml merges an `automated` PR once CI is green
 ```
 
 ## Good next steps

@@ -1,0 +1,58 @@
+name: Feature request
+description: Suggest a capability that moves the product goal forward.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The product goal: the easiest and fastest way to try any AI system, any
+        app, on any environment, on any device — entirely in the browser.
+
+        The daily autonomous loop reads open issues when it chooses its work.
+        A clear issue makes the loop more likely to pick your idea.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What is hard or impossible today.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you want the app to do
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Which tier this affects
+      options:
+        - Agent sandbox
+        - App bottle
+        - Mini OS
+        - The dashboard itself
+        - More than one tier
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Other approaches you considered
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraint check
+      description: This repository has hard constraints. Confirm the idea keeps them.
+      options:
+        - label: It works client-side only. It needs no server and no backend.
+          required: true
+        - label: It really executes. It does not simulate a container.
+          required: true
+        - label: Its runtime assets can be served same-origin from `public/`.
+          required: true

@@ -93,3 +93,9 @@ export function evaluateEgress(
   }
   return { verdict: "deny", reason: `no rule permits ${method} ${req.host}` };
 }
+
+/** Build the HTTPS URL an allowed egress call actually fetches. */
+export function egressUrl(host: string, path?: string): string {
+  const p = path && path.length > 0 ? (path.startsWith("/") ? path : `/${path}`) : "/";
+  return `https://${host}${p}`;
+}

@@ -136,7 +136,18 @@ STATIC_EXPORT=true npm run build   # static export to out/
 | `npm run build` | Production build (`STATIC_EXPORT=true` for static export). |
 | `npm run lint` | ESLint. |
 | `npm run typecheck` | TypeScript. |
+| `npm test` | Unit tests (Vitest). `npm run test:watch` to re-run on change. |
 | `npm run fetch-v86-images` | Download large v86 disk images (Ubuntu desktop ISO). |
+
+After a static export, check that it can still boot a container:
+
+```bash
+bash scripts/check-static-export.sh /clientside-containers
+```
+
+It fails when `out/` lost the v86 engine, the agent worker, a bootable kernel,
+or the inlined base path — failures that otherwise show up only in the browser,
+as a container that never boots.
 
 ## Notes
 
@@ -153,6 +164,30 @@ in isolated environments, for any agent, app, or OS, on any device. See
 [ROADMAP.md](./ROADMAP.md) for the horizons — from making each tier more real to
 orchestrating, snapshotting, and sharing containers. It is a living document with
 no defined end.
+
+## Contributing
+
+Contributions are welcome from humans and from agents, and both go through the
+same gates. Start with [CONTRIBUTING.md](./CONTRIBUTING.md); [AGENTS.md](./AGENTS.md)
+has the development loop and the map of the code. Report security faults
+privately — see [SECURITY.md](./SECURITY.md).
+
+### The repo improves itself daily
+
+A scheduled agent runs once a day. It spends up to two hours choosing the single
+highest-value change — a tier made more real, friction removed, or a major
+problem fixed — then builds it on a branch, writes tests for it, and opens a pull
+request. CI runs the typecheck, the lint, the tests, and both builds; when every
+check is green the pull request squashes into `main` on its own.
+
+Only pull requests labelled `automated` and coming from this repository can merge
+that way. Everything else waits for a human.
+
+[docs/autonomous-loop.md](./docs/autonomous-loop.md) is the full specification —
+how ideas are scored, what the build agent may not do, and every condition that
+must hold before a merge. [docs/loop-log.md](./docs/loop-log.md) records each
+cycle. Runners-up from each brainstorm are filed as issues labelled
+`loop-candidate`, so the shortlist is public.
 
 ## License
 
