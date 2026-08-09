@@ -23,12 +23,17 @@ export function feedSerialByte(term: SerialTerminal, byte: number): void {
   if (term.pendingEsc) {
     term.pendingEsc += String.fromCharCode(byte);
     if (term.pendingEsc.startsWith("\x1b[")) {
-      const final = term.pendingEsc.slice(-1);
-      if (final >= "@" && final <= "~") {
-        applyCsi(term, term.pendingEsc);
-        term.pendingEsc = "";
-      } else if (term.pendingEsc.length > 32) {
-        term.pendingEsc = "";
+      // The introducer "\x1b[" is two bytes long; only a byte *after* it can
+      // be the sequence's final byte, even though "[" (0x5B) itself falls in
+      // the @-~ range a final byte is matched against.
+      if (term.pendingEsc.length > 2) {
+        const final = term.pendingEsc.slice(-1);
+        if (final >= "@" && final <= "~") {
+          applyCsi(term, term.pendingEsc);
+          term.pendingEsc = "";
+        } else if (term.pendingEsc.length > 32) {
+          term.pendingEsc = "";
+        }
       }
     } else if (term.pendingEsc.length > 8) {
       term.pendingEsc = "";
