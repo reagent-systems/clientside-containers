@@ -52,6 +52,7 @@ and no account to take over. The interesting faults are these:
 | A request fails because of CORS | The browser enforces CORS. The app reports it honestly and does not work around it. |
 | A denial of service against the visitor's own tab | The visitor controls their own tab. Booting a large image is meant to use memory. |
 | A report from an automated scanner with no working proof | Send a proof of concept. |
+| The Agent Console's `/eval` sample runs its expression via `Function` | This is the sample's whole point — the same visitor's tab evaluating text it sent to itself, in a context DevTools already gives it equivalent reach into. `/eval` cannot reach the network outside the `/egress` policy (`lib/eval-sandbox.ts`); that was a real, in-scope fault and is fixed. Static scanners flag the `Function` call itself as code injection; there is no cross-visitor or cross-origin path here for it to describe. |
 
 ## How the automation is contained
 
