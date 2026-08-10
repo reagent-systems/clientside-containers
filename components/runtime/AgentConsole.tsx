@@ -21,6 +21,12 @@ const SAMPLES = [
   },
   { label: "egress evil.com", method: "POST", path: "/egress", body: '{ "host": "evil.com", "method": "POST" }' },
   { label: "eval", method: "POST", path: "/eval", body: '{ "expr": "2 + 40" }' },
+  {
+    label: "eval fetch (blocked)",
+    method: "POST",
+    path: "/eval",
+    body: '{ "expr": "typeof fetch" }',
+  },
 ];
 
 export function AgentConsole({
