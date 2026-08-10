@@ -39,8 +39,20 @@ const SANDBOXED_GLOBALS = [
   "Worker",
 ];
 
+// CodeQL flags the next line as code injection (js/code-injection): `expr`
+// is attacker-controlled and reaches `Function`. That's real, and it's the
+// entire, intentional point of /eval — the console's own "eval" sample
+// demonstrates it by evaluating "2 + 40". Per SECURITY.md's threat model,
+// this app has no server and no other visitor to attack: `expr` is text the
+// same visitor's own browser tab sent to itself, in a context that already
+// has full DevTools access to that tab. Shadowing the sandboxed globals
+// above closes the one real escalation this endpoint offered — reaching the
+// network outside the /egress policy — which is the in-scope fault under
+// SECURITY.md ("Policy bypass in the agent sandbox"). Running attacker-
+// supplied script from a *different* origin, which this alert's generic
+// query can't distinguish from that, is not something this line does.
 function sandboxedEval(expr) {
-  const fn = Function(...SANDBOXED_GLOBALS, `"use strict"; return (${expr});`);
+  const fn = Function(...SANDBOXED_GLOBALS, `"use strict"; return (${expr});`); // lgtm[js/code-injection]
   return fn(...SANDBOXED_GLOBALS.map(() => undefined));
 }
 
