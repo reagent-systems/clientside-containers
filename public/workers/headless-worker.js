@@ -24,6 +24,26 @@ function egressUrl(host, path) {
   return `https://${host}${p}`;
 }
 
+// Names an evaluated /eval expression must not be able to reach — anything
+// that could perform network I/O or touch the worker's own messaging
+// surface, which would route around the policy /egress enforces.
+const SANDBOXED_GLOBALS = [
+  "fetch",
+  "XMLHttpRequest",
+  "WebSocket",
+  "importScripts",
+  "self",
+  "postMessage",
+  "indexedDB",
+  "caches",
+  "Worker",
+];
+
+function sandboxedEval(expr) {
+  const fn = Function(...SANDBOXED_GLOBALS, `"use strict"; return (${expr});`);
+  return fn(...SANDBOXED_GLOBALS.map(() => undefined));
+}
+
 // A denied call never reaches the network — the policy check runs first, and
 // only an "allow" verdict is followed by a real fetch. The result (status,
 // or the CORS/network failure) is surfaced as-is; nothing is faked.
@@ -64,7 +84,7 @@ async function handle(req) {
   }
   if (path === "/eval" && method === "POST" && body && typeof body.expr === "string") {
     try {
-      const result = Function(`"use strict"; return (${body.expr});`)();
+      const result = sandboxedEval(body.expr);
       return { status: 200, body: { result } };
     } catch (err) {
       return { status: 400, body: { error: String(err) } };

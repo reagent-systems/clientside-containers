@@ -12,6 +12,12 @@ The [autonomous daily loop](./docs/autonomous-loop.md) adds an entry under
 
 ### Fixed
 
+- The Agent Console's `/eval` sample can no longer reach the network directly.
+  Evaluated expressions used to run in the same worker scope as `fetch`,
+  which meant `{ "expr": "fetch(...)" }` could route around the policy that
+  `/egress` enforces. `fetch`, `XMLHttpRequest`, `postMessage`, and the rest
+  of the worker's messaging surface are now shadowed as unreachable inside an
+  evaluated expression.
 - A container's terminal (App bottle, Mini OS) no longer leaks raw escape-
   sequence characters into its output. The ANSI CSI parser treated the `[`
   introducer byte as if it could also be the sequence's final byte, so any
