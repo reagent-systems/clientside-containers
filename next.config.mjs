@@ -17,7 +17,24 @@ const nextConfig = {
         images: { unoptimized: true },
         ...(basePath ? { basePath, assetPrefix: `${basePath}/` } : {}),
       }
-    : {}),
+    : {
+        // Cross-origin isolation so the WebContainer-backed OpenShell runtime
+        // can use SharedArrayBuffer. `credentialless` keeps existing cross-origin
+        // subresources (agent egress, v86 assets) working. In static export the
+        // headers below are a no-op; a COI service worker provides isolation
+        // there instead (see public/coi-serviceworker.js).
+        async headers() {
+          return [
+            {
+              source: "/:path*",
+              headers: [
+                { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+                { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
+              ],
+            },
+          ];
+        },
+      }),
 };
 
 export default nextConfig;

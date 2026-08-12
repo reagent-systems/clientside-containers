@@ -5,6 +5,7 @@ import { BASE_PATH } from "@/lib/base-path";
 import { DEFAULT_AGENT_POLICY_YAML, parsePolicy } from "@/lib/policy";
 import { saveContainer } from "@/lib/containers-db";
 import type { Container, ContainerPreview } from "@/lib/container";
+import { OpenShellRuntime } from "./OpenShellRuntime";
 
 interface LogLine {
   dir: "in" | "out" | "sys" | "act";
@@ -109,6 +110,7 @@ export function AgentConsole({
   const [log, setLog] = useState<LogLine[]>([]);
   const [policyText, setPolicyText] = useState(container.settings.policyYaml ?? DEFAULT_AGENT_POLICY_YAML);
   const [policyError, setPolicyError] = useState<string | null>(null);
+  const [runtimeMode, setRuntimeMode] = useState<"builtin" | "openshell">("builtin");
   const onPreviewRef = useRef(onPreview);
   onPreviewRef.current = onPreview;
 
@@ -223,7 +225,30 @@ export function AgentConsole({
   }
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full w-full flex-col">
+      <div className="flex items-center gap-2 border-b border-gray-alpha-400 bg-background-100 px-3 py-1.5">
+        <span className="text-label-12 text-gray-700">Runtime</span>
+        <button
+          type="button"
+          onClick={() => setRuntimeMode("builtin")}
+          className={runtimeMode === "builtin" ? "btn-primary btn-small" : "btn-tertiary btn-small"}
+        >
+          Built-in agent
+        </button>
+        <button
+          type="button"
+          onClick={() => setRuntimeMode("openshell")}
+          className={runtimeMode === "openshell" ? "btn-primary btn-small" : "btn-tertiary btn-small"}
+        >
+          OpenShell (WebContainer)
+        </button>
+      </div>
+      {runtimeMode === "openshell" ? (
+        <div className="min-h-0 flex-1">
+          <OpenShellRuntime container={container} />
+        </div>
+      ) : (
+        <div className="flex min-h-0 w-full flex-1">
       <div className="flex w-80 shrink-0 flex-col border-r border-gray-alpha-400 bg-background-100">
         <div className="border-b border-gray-alpha-400 px-3 py-2 text-label-12 font-medium text-gray-900">
           OpenShell Policy
@@ -355,6 +380,9 @@ export function AgentConsole({
           />
         </div>
       </div>
+        </div>
+      )}
     </div>
   );
 }
+// force recompile
