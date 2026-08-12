@@ -7,7 +7,7 @@ import { saveContainer } from "@/lib/containers-db";
 import type { Container, ContainerPreview } from "@/lib/container";
 
 interface LogLine {
-  dir: "in" | "out" | "sys";
+  dir: "in" | "out" | "sys" | "act";
   text: string;
 }
 
@@ -34,11 +34,56 @@ const SAMPLES = [
   { label: "eval", method: "POST", path: "/eval", body: '{ "expr": "2 + 40" }' },
 ];
 
+const GOAL_SAMPLES = [
+  "Fetch https://api.github.com/zen and save it to /workspace/zen.txt then read /workspace/zen.txt",
+  "Compute 6 * 7 + 12",
+  "Fetch https://evil.com/secrets and save it to /workspace/loot.txt",
+];
+
 function summarizeBody(body: unknown): string {
   try {
     return JSON.stringify(body);
   } catch {
     return String(body);
+  }
+}
+
+interface AgentEvent {
+  type: string;
+  step?: number;
+  goal?: string;
+  network?: string;
+  reasoner?: string;
+  text?: string;
+  tool?: string;
+  args?: unknown;
+  observation?: { ok?: boolean; [k: string]: unknown };
+  answer?: string;
+  reason?: string;
+  error?: string;
+}
+
+function formatEvent(ev: AgentEvent): LogLine {
+  switch (ev.type) {
+    case "start":
+      return { dir: "sys", text: `agent start (${ev.reasoner} reasoner, network=${ev.network}) — ${ev.goal}` };
+    case "thought":
+      return { dir: "sys", text: `  thought: ${ev.text}` };
+    case "action":
+      return { dir: "act", text: `step ${ev.step}: ${ev.tool}(${summarizeBody(ev.args)})` };
+    case "observation": {
+      const o = ev.observation ?? {};
+      const ok = o.ok ? "ok" : "err";
+      return { dir: "out", text: `        → ${ok} ${summarizeBody(o)}` };
+    }
+    case "finish":
+      return { dir: "sys", text: `✓ finish: ${ev.answer}` };
+    case "aborted":
+      return { dir: "sys", text: `✗ aborted: ${ev.reason}` };
+    case "error":
+      return { dir: "sys", text: `✗ error: ${ev.error}` };
+    default:
+      return { dir: "sys", text: summarizeBody(ev) };
   }
 }
 
@@ -58,6 +103,9 @@ export function AgentConsole({
   const [method, setMethod] = useState("GET");
   const [path, setPath] = useState("/health");
   const [body, setBody] = useState("");
+  const [goal, setGoal] = useState(GOAL_SAMPLES[0]);
+  const [apiKey, setApiKey] = useState("");
+  const [running, setRunning] = useState(false);
   const [log, setLog] = useState<LogLine[]>([]);
   const [policyText, setPolicyText] = useState(container.settings.policyYaml ?? DEFAULT_AGENT_POLICY_YAML);
   const [policyError, setPolicyError] = useState<string | null>(null);
@@ -81,7 +129,7 @@ export function AgentConsole({
   }, []);
 
   useEffect(() => {
-    const worker = new Worker(`${BASE_PATH}/workers/headless-worker.js`, { type: "classic" });
+    const worker = new Worker(`${BASE_PATH}/workers/headless-worker.js`, { type: "module" });
     workerRef.current = worker;
     worker.onmessage = (ev) => {
       const msg = ev.data || {};
@@ -97,6 +145,8 @@ export function AgentConsole({
             text: `agent runtime ready — policy applied, network=${container.settings.network}`,
           },
         ]);
+      } else if (msg.type === "agent-event") {
+        setLog((l) => [...l, formatEvent(msg.event as AgentEvent)]);
       } else if (msg.type === "response") {
         const resolve = pending.current.get(msg.id);
         if (resolve) {
@@ -148,6 +198,23 @@ export function AgentConsole({
     p.then((res) => setLog((l) => [...l, { dir: "out", text: `${res.status} ${summarizeBody(res.body)}` }]));
   }, [method, path, body]);
 
+  const runAgentTask = useCallback(() => {
+    const worker = workerRef.current;
+    if (!worker || !goal.trim() || running) return;
+    setRunning(true);
+    const id = ++reqId.current;
+    setLog((l) => [...l, { dir: "in", text: `run agent — ${goal.trim()}` }]);
+    const payload: { goal: string; apiKey?: string } = { goal: goal.trim() };
+    if (apiKey.trim()) payload.apiKey = apiKey.trim();
+    const p = new Promise<{ status: number; body: unknown }>((resolve) => pending.current.set(id, resolve));
+    worker.postMessage({ type: "request", id, payload: { method: "POST", path: "/agent/run", body: payload } });
+    p.then((res) => {
+      const b = res.body as { status?: string; steps?: number } | undefined;
+      setLog((l) => [...l, { dir: "sys", text: `agent ${b?.status ?? "done"} in ${b?.steps ?? 0} step(s)` }]);
+      setRunning(false);
+    });
+  }, [goal, apiKey, running]);
+
   function savePolicy() {
     if (applyPolicy(policyText)) {
       void saveContainer({ ...container, settings: { ...container.settings, policyYaml: policyText } });
@@ -176,19 +243,65 @@ export function AgentConsole({
       </div>
 
       <div className="flex flex-1 flex-col bg-black">
+        <div className="border-b border-gray-alpha-400 bg-background-100 p-3">
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {GOAL_SAMPLES.map((g) => (
+              <button
+                key={g}
+                type="button"
+                className="btn-secondary btn-small"
+                onClick={() => setGoal(g)}
+                title={g}
+              >
+                {g.length > 32 ? `${g.slice(0, 32)}…` : g}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              className="input flex-1 font-mono text-copy-13"
+              placeholder="Give the agent a goal…"
+              aria-label="Agent goal"
+            />
+            <button
+              type="button"
+              onClick={runAgentTask}
+              disabled={!ready || running || !goal.trim()}
+              className="btn-primary"
+            >
+              {running ? "Running…" : "Run agent"}
+            </button>
+          </div>
+          <input
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            className="input mt-2 font-mono text-copy-13"
+            placeholder="Model API key — optional; blank runs the built-in planner"
+            aria-label="Model API key"
+            type="password"
+          />
+        </div>
         <div className="flex-1 overflow-auto p-4 font-mono text-copy-13 leading-relaxed">
           {log.length === 0 ? (
-            <p className="text-gray-700">No calls yet. Send a request below.</p>
+            <p className="text-gray-700">No calls yet. Give the agent a goal, or send a request below.</p>
           ) : (
             log.map((line, i) => (
               <div
                 key={i}
                 className={
-                  line.dir === "in" ? "text-blue-600" : line.dir === "out" ? "text-green-600" : "text-gray-700"
+                  line.dir === "in"
+                    ? "text-blue-600"
+                    : line.dir === "out"
+                      ? "text-green-600"
+                      : line.dir === "act"
+                        ? "text-amber-600"
+                        : "text-gray-700"
                 }
               >
                 <span className="select-none text-gray-700">
-                  {line.dir === "in" ? "→ " : line.dir === "out" ? "← " : "• "}
+                  {line.dir === "in" ? "→ " : line.dir === "out" ? "← " : line.dir === "act" ? "» " : "• "}
                 </span>
                 <span className="break-all whitespace-pre-wrap">{line.text}</span>
               </div>
