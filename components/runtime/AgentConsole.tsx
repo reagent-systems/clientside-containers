@@ -240,12 +240,12 @@ export function AgentConsole({
           onClick={() => setRuntimeMode("openshell")}
           className={runtimeMode === "openshell" ? "btn-primary btn-small" : "btn-tertiary btn-small"}
         >
-          OpenShell (WebContainer)
+          OpenShell runtime
         </button>
       </div>
       {runtimeMode === "openshell" ? (
         <div className="min-h-0 flex-1">
-          <OpenShellRuntime container={container} />
+          <OpenShellRuntime container={container} onStatus={onStatus} onPreview={onPreview} />
         </div>
       ) : (
         <div className="flex min-h-0 w-full flex-1">

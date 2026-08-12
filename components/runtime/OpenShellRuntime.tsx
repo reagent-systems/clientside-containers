@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getAgentPreset } from "@/lib/agents";
-import type { Container } from "@/lib/container";
+import type { Container, ContainerPreview } from "@/lib/container";
 import type { WebContainer as WebContainerType, WebContainerProcess } from "@webcontainer/api";
+import { EmulatorScreen } from "./EmulatorScreen";
 
 // A single WebContainer per page (the API allows only one instance). Booting is
 // expensive, so we keep the boot promise at module scope and reuse it.
@@ -28,7 +29,8 @@ const PATH_EXPORT = 'export PATH="$(npm config get prefix)/bin:$PATH"; hash -r 2
 
 type Phase = "idle" | "booting" | "ready" | "running" | "error";
 
-export function OpenShellRuntime({ container }: { container: Container }) {
+// The Node backend: a real in-browser Node.js + npm OS (WebContainer).
+function WebContainerBackend({ container }: { container: Container }) {
   const preset = getAgentPreset(container.agentId);
   const wcRef = useRef<WebContainerType | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -231,6 +233,84 @@ export function OpenShellRuntime({ container }: { container: Container }) {
           Run
         </button>
       </form>
+    </div>
+  );
+}
+
+// The Linux backend: a real x86 Linux (v86/WASM), bundled and same-origin. No
+// Node required — a genuine OS with a BusyBox shell. Buildroot needs more RAM
+// than the agent tier's tiny default, so bump it here.
+function LinuxBackend({
+  container,
+  onStatus,
+  onPreview,
+}: {
+  container: Container;
+  onStatus?: (s: Container["status"]) => void;
+  onPreview?: (p: ContainerPreview) => void;
+}) {
+  const linuxContainer: Container = {
+    ...container,
+    settings: { ...container.settings, memoryMb: Math.max(container.settings.memoryMb, 256) },
+  };
+  return (
+    <div className="flex h-full w-full flex-col bg-black">
+      <div className="border-b border-gray-alpha-400 bg-background-100 px-3 py-2 text-copy-13 text-gray-700">
+        Real x86 Linux (v86/WASM) — BusyBox shell. Click the terminal, then type.
+      </div>
+      <div className="min-h-0 flex-1">
+        <EmulatorScreen container={linuxContainer} onStatus={onStatus} onPreview={onPreview} />
+      </div>
+    </div>
+  );
+}
+
+type Backend = "webcontainer" | "linux";
+
+// The OpenShell runtime is pluggable: it runs an agent on whatever in-browser
+// runtime fits. Node/npm agents use WebContainer; anything else can use a real
+// x86 Linux (v86). Neither needs a server, and both are same-origin (v86) or
+// browser-sandboxed (WebContainer).
+export function OpenShellRuntime({
+  container,
+  onStatus,
+  onPreview,
+}: {
+  container: Container;
+  onStatus?: (s: Container["status"]) => void;
+  onPreview?: (p: ContainerPreview) => void;
+}) {
+  const preset = getAgentPreset(container.agentId);
+  const [backend, setBackend] = useState<Backend>(
+    preset.setup.runtime === "native" ? "linux" : "webcontainer",
+  );
+
+  return (
+    <div className="flex h-full w-full flex-col">
+      <div className="flex flex-wrap items-center gap-2 border-b border-gray-alpha-400 bg-background-100 px-3 py-1.5">
+        <span className="text-label-12 text-gray-700">Backend</span>
+        <button
+          type="button"
+          onClick={() => setBackend("webcontainer")}
+          className={backend === "webcontainer" ? "btn-primary btn-small" : "btn-tertiary btn-small"}
+        >
+          Node · WebContainer
+        </button>
+        <button
+          type="button"
+          onClick={() => setBackend("linux")}
+          className={backend === "linux" ? "btn-primary btn-small" : "btn-tertiary btn-small"}
+        >
+          Linux · v86
+        </button>
+      </div>
+      <div className="min-h-0 flex-1">
+        {backend === "webcontainer" ? (
+          <WebContainerBackend container={container} />
+        ) : (
+          <LinuxBackend container={container} onStatus={onStatus} onPreview={onPreview} />
+        )}
+      </div>
     </div>
   );
 }
