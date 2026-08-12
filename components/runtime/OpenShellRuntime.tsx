@@ -157,12 +157,9 @@ export function OpenShellRuntime({ container }: { container: Container }) {
     }
     // Prefer the installed global bin; WebContainer's npm doesn't always link a
     // global bin, so fall back to `npx` (which resolves the real package) so the
-    // CLI actually runs either way.
+    // CLI actually runs either way. Uses `||` (not `if/fi`) for jsh compatibility.
     const { bin, args = "", pkg } = preset.setup;
-    void runRaw(
-      `${PATH_EXPORT} if command -v ${bin} >/dev/null 2>&1; then ${bin} ${args}; ` +
-        `else echo "(${bin} not linked in this runtime; running via npx)"; npx -y ${pkg} ${args}; fi`,
-    );
+    void runRaw(`${PATH_EXPORT} ${bin} ${args} || npx -y ${pkg} ${args}`);
   }, [preset, runRaw]);
 
   const busy = phase === "booting" || phase === "running";
