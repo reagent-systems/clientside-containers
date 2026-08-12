@@ -18,20 +18,21 @@ const nextConfig = {
         ...(basePath ? { basePath, assetPrefix: `${basePath}/` } : {}),
       }
     : {
-        // Cross-origin isolation so the WebContainer-backed OpenShell runtime
-        // can use SharedArrayBuffer. `credentialless` keeps existing cross-origin
-        // subresources (agent egress, v86 assets) working. In static export the
-        // headers below are a no-op; a COI service worker provides isolation
-        // there instead (see public/coi-serviceworker.js).
+        // Cross-origin isolation (for the WebContainer Node backend's
+        // SharedArrayBuffer) is scoped to the /openshell route ONLY. Applying it
+        // globally breaks the v86 tiers, which halt under cross-origin isolation,
+        // and isolation is all-or-nothing per page — so the Node runtime lives on
+        // its own isolated top-level page while the dashboard and v86 tiers stay
+        // non-isolated. In static export these headers are a no-op; that route
+        // would need a COI service worker to isolate on GitHub Pages.
         async headers() {
+          const coi = [
+            { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+            { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
+          ];
           return [
-            {
-              source: "/:path*",
-              headers: [
-                { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-                { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
-              ],
-            },
+            { source: "/openshell", headers: coi },
+            { source: "/openshell/:path*", headers: coi },
           ];
         },
       }),

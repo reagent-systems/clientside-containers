@@ -5,6 +5,7 @@ import { getAgentPreset } from "@/lib/agents";
 import type { Container, ContainerPreview } from "@/lib/container";
 import type { WebContainer as WebContainerType, WebContainerProcess } from "@webcontainer/api";
 import { EmulatorScreen } from "./EmulatorScreen";
+import { BASE_PATH } from "@/lib/base-path";
 
 // A single WebContainer per page (the API allows only one instance). Booting is
 // expensive, so we keep the boot promise at module scope and reuse it.
@@ -30,7 +31,7 @@ const PATH_EXPORT = 'export PATH="$(npm config get prefix)/bin:$PATH"; hash -r 2
 type Phase = "idle" | "booting" | "ready" | "running" | "error";
 
 // The Node backend: a real in-browser Node.js + npm OS (WebContainer).
-function WebContainerBackend({ container }: { container: Container }) {
+export function WebContainerBackend({ container }: { container: Container }) {
   const preset = getAgentPreset(container.agentId);
   const wcRef = useRef<WebContainerType | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -265,6 +266,34 @@ function LinuxBackend({
   );
 }
 
+// The Node backend needs cross-origin isolation (SharedArrayBuffer), which the
+// dashboard page can't have without breaking the v86 tiers. When this page is
+// not isolated, run the Node backend on the dedicated isolated /openshell page.
+function NodeBackend({ container }: { container: Container }) {
+  const [isolated, setIsolated] = useState<boolean | null>(null);
+  useEffect(() => setIsolated(!!globalThis.crossOriginIsolated), []);
+
+  if (isolated === null) return null;
+  if (isolated) return <WebContainerBackend container={container} />;
+
+  const url = `${BASE_PATH}/openshell/?agent=${encodeURIComponent(container.agentId ?? "")}`;
+  return (
+    <div className="flex h-full w-full flex-col items-start gap-3 bg-black p-6 text-copy-14 text-gray-800">
+      <p className="text-gray-1000">
+        The Node runtime is a real in-browser Node.js + npm OS (WebContainer). It needs a
+        cross-origin-isolated page, which can&apos;t coexist with the Linux (v86) runtime here, so it opens
+        in its own tab.
+      </p>
+      <button type="button" onClick={() => window.open(url, "_blank", "noopener")} className="btn-primary">
+        Open Node runtime
+      </button>
+      <p className="text-copy-13 text-gray-700">
+        There you can run its real one-line install, e.g. <code>npm install -g openclaw@latest</code>.
+      </p>
+    </div>
+  );
+}
+
 type Backend = "webcontainer" | "linux";
 
 // The OpenShell runtime is pluggable: it runs an agent on whatever in-browser
@@ -306,7 +335,7 @@ export function OpenShellRuntime({
       </div>
       <div className="min-h-0 flex-1">
         {backend === "webcontainer" ? (
-          <WebContainerBackend container={container} />
+          <NodeBackend container={container} />
         ) : (
           <LinuxBackend container={container} onStatus={onStatus} onPreview={onPreview} />
         )}
