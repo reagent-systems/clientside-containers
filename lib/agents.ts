@@ -7,6 +7,29 @@ export interface EgressAllow {
   methods: string[];
 }
 
+/**
+ * How an agent is provisioned in the OpenShell (WebContainer) runtime.
+ * `runtime: "node"` agents install and run in the in-browser Node runtime.
+ * `runtime: "native"` agents (Python/Docker toolchains) can't run in a browser
+ * Node runtime — their real installers need a full OS, so we surface that
+ * honestly rather than pretend.
+ */
+export interface AgentSetup {
+  runtime: "node" | "native";
+  /** npm package (node runtime) — enables a reliable `npx` run path. */
+  pkg?: string;
+  /** Executable name the package installs (node runtime). */
+  bin?: string;
+  /** Args used to prove the CLI runs, e.g. "--version". */
+  args?: string;
+  /** The real one-line install, shown verbatim and executed for real. */
+  install: string;
+  /** The command that starts the agent after install. */
+  run: string;
+  /** For native-runtime agents, why the browser Node runtime can't host them. */
+  requires?: string;
+}
+
 export interface AgentPreset {
   id: string;
   label: string;
@@ -14,6 +37,8 @@ export interface AgentPreset {
   blurb: string;
   /** API hosts this agent needs (beyond the shared developer hosts). */
   apiHosts: string[];
+  /** Real install/run commands used by the OpenShell runtime. */
+  setup: AgentSetup;
 }
 
 // Hosts every coding agent tends to reach: source, packages.
@@ -31,6 +56,14 @@ export const AGENT_PRESETS: AgentPreset[] = [
     vendor: "openclaw.ai · NVIDIA NemoClaw",
     blurb: "The NemoClaw reference agent. Talks to Anthropic and OpenAI inference.",
     apiHosts: ["api.anthropic.com", "api.openai.com"],
+    setup: {
+      runtime: "node",
+      pkg: "openclaw",
+      bin: "openclaw",
+      args: "--version",
+      install: "npm install -g openclaw@latest",
+      run: "openclaw --version",
+    },
   },
   {
     id: "nanoclaw",
@@ -38,6 +71,14 @@ export const AGENT_PRESETS: AgentPreset[] = [
     vendor: "NVIDIA NemoClaw",
     blurb: "Minimal NemoClaw agent — a single inference backend.",
     apiHosts: ["api.anthropic.com"],
+    setup: {
+      runtime: "node",
+      pkg: "openclaw",
+      bin: "openclaw",
+      args: "--version",
+      install: "npm install -g openclaw@latest",
+      run: "openclaw --version",
+    },
   },
   {
     id: "hermes",
@@ -45,6 +86,12 @@ export const AGENT_PRESETS: AgentPreset[] = [
     vendor: "Nous Research",
     blurb: "Hermes agent over OpenAI-compatible inference.",
     apiHosts: ["api.openai.com", "api.anthropic.com"],
+    setup: {
+      runtime: "native",
+      install: "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
+      run: "hermes",
+      requires: "Python 3.11 (uv) + git — the installer provisions a native toolchain",
+    },
   },
   {
     id: "claude-code",
@@ -52,6 +99,14 @@ export const AGENT_PRESETS: AgentPreset[] = [
     vendor: "Anthropic",
     blurb: "Anthropic's coding agent. Egress limited to the Anthropic API.",
     apiHosts: ["api.anthropic.com"],
+    setup: {
+      runtime: "node",
+      pkg: "@anthropic-ai/claude-code",
+      bin: "claude",
+      args: "--version",
+      install: "npm install -g @anthropic-ai/claude-code",
+      run: "claude --version",
+    },
   },
   {
     id: "gemini-cli",
@@ -59,6 +114,14 @@ export const AGENT_PRESETS: AgentPreset[] = [
     vendor: "Google",
     blurb: "Google's Gemini command-line agent.",
     apiHosts: ["generativelanguage.googleapis.com", "oauth2.googleapis.com"],
+    setup: {
+      runtime: "node",
+      pkg: "@google/gemini-cli",
+      bin: "gemini",
+      args: "--version",
+      install: "npm install -g @google/gemini-cli",
+      run: "gemini --version",
+    },
   },
   {
     id: "grok",
@@ -66,6 +129,14 @@ export const AGENT_PRESETS: AgentPreset[] = [
     vendor: "xAI",
     blurb: "xAI's coding agent over the Grok API.",
     apiHosts: ["api.x.ai"],
+    setup: {
+      runtime: "node",
+      pkg: "@vibe-kit/grok-cli",
+      bin: "grok",
+      args: "--version",
+      install: "npm install -g @vibe-kit/grok-cli",
+      run: "grok --version",
+    },
   },
   {
     id: "cursor",
@@ -73,6 +144,12 @@ export const AGENT_PRESETS: AgentPreset[] = [
     vendor: "Anysphere",
     blurb: "Cursor's agent backend.",
     apiHosts: ["api2.cursor.sh", "api.cursor.com", "repo42.cursor.sh"],
+    setup: {
+      runtime: "native",
+      install: "curl https://cursor.com/install -fsS | bash",
+      run: "cursor-agent",
+      requires: "a native installer script (curl | bash) that provisions a platform binary",
+    },
   },
   {
     id: "cursor-cli",
@@ -80,6 +157,12 @@ export const AGENT_PRESETS: AgentPreset[] = [
     vendor: "Anysphere",
     blurb: "Cursor's command-line agent.",
     apiHosts: ["api2.cursor.sh", "api.cursor.com"],
+    setup: {
+      runtime: "native",
+      install: "curl https://cursor.com/install -fsS | bash",
+      run: "cursor-agent",
+      requires: "a native installer script (curl | bash) that provisions a platform binary",
+    },
   },
 ];
 

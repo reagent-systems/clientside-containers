@@ -17,7 +17,25 @@ const nextConfig = {
         images: { unoptimized: true },
         ...(basePath ? { basePath, assetPrefix: `${basePath}/` } : {}),
       }
-    : {}),
+    : {
+        // Cross-origin isolation (for the WebContainer Node backend's
+        // SharedArrayBuffer) is scoped to the /openshell route ONLY. Applying it
+        // globally breaks the v86 tiers, which halt under cross-origin isolation,
+        // and isolation is all-or-nothing per page — so the Node runtime lives on
+        // its own isolated top-level page while the dashboard and v86 tiers stay
+        // non-isolated. In static export these headers are a no-op; that route
+        // would need a COI service worker to isolate on GitHub Pages.
+        async headers() {
+          const coi = [
+            { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+            { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
+          ];
+          return [
+            { source: "/openshell", headers: coi },
+            { source: "/openshell/:path*", headers: coi },
+          ];
+        },
+      }),
 };
 
 export default nextConfig;

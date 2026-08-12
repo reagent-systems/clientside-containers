@@ -106,3 +106,27 @@ public/workers/                agent worker (headless-worker.js)
 - End-to-end verification requires a browser (WebAssembly + Web Workers +
   IndexedDB); the container tiers actually execute client-side, so use the GUI
   smoke test rather than trying to exercise tiers headlessly.
+- The Agent sandbox has two runtimes (toggle at the top of the agent console):
+  the **built-in** ReAct agent loop (Web Worker, `public/workers/agent-engine.js`,
+  unit-tested by `npm test`) and the **OpenShell runtime**
+  (`components/runtime/OpenShellRuntime.tsx`), which is pluggable — it runs an
+  agent on whatever in-browser runtime fits.
+- OpenShell backends: **Node · WebContainer** (real Node.js+npm; runs Node
+  agents like OpenClaw) and **Linux · v86** (a real x86 Linux/WASM with a BusyBox
+  shell, bundled + same-origin, no Node, no server — reuses `EmulatorScreen`,
+  bumped to 256 MiB).
+- **Cross-origin isolation is scoped, on purpose.** WebContainer needs COI
+  (SharedArrayBuffer), but the v86 tiers HALT under cross-origin isolation, and
+  isolation is all-or-nothing per page. So `next.config.mjs` sets COOP/COEP
+  (`credentialless`) ONLY on the `/openshell` route. The dashboard + v86 stay
+  non-isolated; the Node backend runs on the isolated `/openshell` page, which
+  the agent console opens in a new tab. Do NOT re-enable global COI — it breaks
+  v86. (These headers are a no-op in static export; GitHub Pages would need a COI
+  service worker scoped to /openshell.)
+- Non-obvious WebContainer caveats: `npm prefix -g` returns empty (use
+  `npm config get prefix`); `npm install -g` often doesn't link a global bin, so
+  agents launch via an `npx -y <pkg>` fallback; `jsh` lacks `if/fi` (use `||`).
+  Node/npm agents (OpenClaw) run in-browser; agents whose installer needs
+  Python/uv or Docker (Hermes, NemoClaw) can't run in the Node backend, and the
+  offline v86 backend has no package manager/network — so those remain out of
+  reach in-browser today.
