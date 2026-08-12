@@ -24,7 +24,7 @@ async function bootWebContainer(): Promise<WebContainerType> {
 // bin dir from `npm prefix -g` at run time so it is correct regardless of $HOME.
 const NPM_PREFIX_SETUP =
   'mkdir -p "$HOME/.npm-global" && npm config set prefix "$HOME/.npm-global"';
-const PATH_EXPORT = 'export PATH="$(npm prefix -g)/bin:$PATH"; hash -r 2>/dev/null;';
+const PATH_EXPORT = 'export PATH="$(npm config get prefix)/bin:$PATH"; hash -r 2>/dev/null;';
 
 type Phase = "idle" | "booting" | "ready" | "running" | "error";
 
@@ -147,7 +147,7 @@ export function OpenShellRuntime({ container }: { container: Container }) {
     }
     await runShell(`npm install -g ${preset.setup.pkg}`);
     // Show what actually got linked into the global bin.
-    await runRaw('ls -la "$(npm prefix -g)/bin" 2>&1 | head -40');
+    await runRaw('ls -la "$(npm config get prefix)/bin" 2>&1');
   }, [preset, runShell, runRaw, sys]);
 
   const startAgent = useCallback(() => {
@@ -155,10 +155,14 @@ export function OpenShellRuntime({ container }: { container: Container }) {
       void runRaw(preset.setup.run);
       return;
     }
-    // Try the installed global bin, then fall back to `npx` (which resolves the
-    // real package regardless of global bin linking) so the CLI actually runs.
+    // Prefer the installed global bin; WebContainer's npm doesn't always link a
+    // global bin, so fall back to `npx` (which resolves the real package) so the
+    // CLI actually runs either way.
     const { bin, args = "", pkg } = preset.setup;
-    void runRaw(`${PATH_EXPORT} (${bin} ${args} || npx -y ${pkg} ${args})`);
+    void runRaw(
+      `${PATH_EXPORT} if command -v ${bin} >/dev/null 2>&1; then ${bin} ${args}; ` +
+        `else echo "(${bin} not linked in this runtime; running via npx)"; npx -y ${pkg} ${args}; fi`,
+    );
   }, [preset, runRaw]);
 
   const busy = phase === "booting" || phase === "running";

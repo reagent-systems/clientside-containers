@@ -106,3 +106,20 @@ public/workers/                agent worker (headless-worker.js)
 - End-to-end verification requires a browser (WebAssembly + Web Workers +
   IndexedDB); the container tiers actually execute client-side, so use the GUI
   smoke test rather than trying to exercise tiers headlessly.
+- The Agent sandbox has two runtimes (toggle at the top of the agent console):
+  the **built-in** ReAct agent loop (Web Worker, `public/workers/agent-engine.js`,
+  unit-tested by `npm test`) and **OpenShell (WebContainer)**, a real in-browser
+  Node.js+npm OS (`components/runtime/OpenShellRuntime.tsx`) that installs and
+  runs an agent via its real one-line command.
+- WebContainer needs cross-origin isolation. `next.config.mjs` sets
+  COOP/COEP (`credentialless`) headers in dev; those headers are a no-op in
+  static export, so GitHub Pages needs a COI service worker (not yet added) for
+  the OpenShell tier to boot there. A WebContainer boots once per tab and its
+  runtime is fetched from StackBlitz (the one cross-origin dependency), so it
+  needs outbound network and a fresh tab to re-boot.
+- Non-obvious OpenShell caveats: `npm prefix -g` returns empty in WebContainer
+  (use `npm config get prefix`), and `npm install -g` often does not link a
+  global bin — the runtime runs agents via an `npx -y <pkg>` fallback. Node/npm
+  agents (e.g. OpenClaw `npm i -g openclaw`) run in-browser; agents whose real
+  installer needs Python/uv or Docker (Hermes, NemoClaw) cannot run in a browser
+  Node runtime.
