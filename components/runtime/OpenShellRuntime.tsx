@@ -20,17 +20,17 @@ async function bootWebContainer(): Promise<WebContainerType> {
 
 // WebContainer's user cannot write to /usr/local, so `npm install -g` fails with
 // EACCES. Point the global prefix at a writable dir and expose its bin on PATH —
-// the same fix OpenClaw's own install docs recommend for EACCES.
+// the same fix OpenClaw's own install docs recommend for EACCES. We derive the
+// bin dir from `npm prefix -g` at run time so it is correct regardless of $HOME.
 const NPM_PREFIX_SETUP =
   'mkdir -p "$HOME/.npm-global" && npm config set prefix "$HOME/.npm-global"';
-const PATH_EXPORT = 'export PATH="$HOME/.npm-global/bin:$PATH";';
+const PATH_EXPORT = 'export PATH="$(npm prefix -g)/bin:$PATH"; hash -r 2>/dev/null;';
 
 type Phase = "idle" | "booting" | "ready" | "running" | "error";
 
 export function OpenShellRuntime({ container }: { container: Container }) {
   const preset = getAgentPreset(container.agentId);
   const wcRef = useRef<WebContainerType | null>(null);
-  const startedRef = useRef(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [lines, setLines] = useState<string[]>([]);
   const [command, setCommand] = useState("");
@@ -85,8 +85,6 @@ export function OpenShellRuntime({ container }: { container: Container }) {
   const runShell = useCallback((cmd: string) => runRaw(`${PATH_EXPORT} ${cmd}`), [runRaw]);
 
   useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
     let cancelled = false;
 
     if (!globalThis.crossOriginIsolated) {
@@ -138,17 +136,30 @@ export function OpenShellRuntime({ container }: { container: Container }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const installAgent = useCallback(() => {
+  const installAgent = useCallback(async () => {
     if (preset.setup.runtime === "native") {
       sys(
         `${preset.label} ships a native installer that needs ${preset.setup.requires ?? "a full OS"}; ` +
           "the browser Node runtime has no Docker/pip, so the install below is expected to fail honestly.",
       );
+      await runRaw(preset.setup.install);
+      return;
     }
-    void runShell(preset.setup.install);
-  }, [preset, runShell, sys]);
+    await runShell(`npm install -g ${preset.setup.pkg}`);
+    // Show what actually got linked into the global bin.
+    await runRaw('ls -la "$(npm prefix -g)/bin" 2>&1 | head -40');
+  }, [preset, runShell, runRaw, sys]);
 
-  const startAgent = useCallback(() => void runShell(preset.setup.run), [preset, runShell]);
+  const startAgent = useCallback(() => {
+    if (preset.setup.runtime === "native") {
+      void runRaw(preset.setup.run);
+      return;
+    }
+    // Try the installed global bin, then fall back to `npx` (which resolves the
+    // real package regardless of global bin linking) so the CLI actually runs.
+    const { bin, args = "", pkg } = preset.setup;
+    void runRaw(`${PATH_EXPORT} (${bin} ${args} || npx -y ${pkg} ${args})`);
+  }, [preset, runRaw]);
 
   const busy = phase === "booting" || phase === "running";
 

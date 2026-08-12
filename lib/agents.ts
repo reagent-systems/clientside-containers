@@ -16,7 +16,13 @@ export interface EgressAllow {
  */
 export interface AgentSetup {
   runtime: "node" | "native";
-  /** The real one-line install, executed for real in the runtime terminal. */
+  /** npm package (node runtime) — enables a reliable `npx` run path. */
+  pkg?: string;
+  /** Executable name the package installs (node runtime). */
+  bin?: string;
+  /** Args used to prove the CLI runs, e.g. "--version". */
+  args?: string;
+  /** The real one-line install, shown verbatim and executed for real. */
   install: string;
   /** The command that starts the agent after install. */
   run: string;
@@ -52,7 +58,10 @@ export const AGENT_PRESETS: AgentPreset[] = [
     apiHosts: ["api.anthropic.com", "api.openai.com"],
     setup: {
       runtime: "node",
-      install: "npm install -g openclaw@latest --omit=optional",
+      pkg: "openclaw",
+      bin: "openclaw",
+      args: "--version",
+      install: "npm install -g openclaw@latest",
       run: "openclaw --version",
     },
   },
@@ -64,7 +73,10 @@ export const AGENT_PRESETS: AgentPreset[] = [
     apiHosts: ["api.anthropic.com"],
     setup: {
       runtime: "node",
-      install: "npm install -g openclaw@latest --omit=optional",
+      pkg: "openclaw",
+      bin: "openclaw",
+      args: "--version",
+      install: "npm install -g openclaw@latest",
       run: "openclaw --version",
     },
   },
@@ -89,6 +101,9 @@ export const AGENT_PRESETS: AgentPreset[] = [
     apiHosts: ["api.anthropic.com"],
     setup: {
       runtime: "node",
+      pkg: "@anthropic-ai/claude-code",
+      bin: "claude",
+      args: "--version",
       install: "npm install -g @anthropic-ai/claude-code",
       run: "claude --version",
     },
@@ -101,6 +116,9 @@ export const AGENT_PRESETS: AgentPreset[] = [
     apiHosts: ["generativelanguage.googleapis.com", "oauth2.googleapis.com"],
     setup: {
       runtime: "node",
+      pkg: "@google/gemini-cli",
+      bin: "gemini",
+      args: "--version",
       install: "npm install -g @google/gemini-cli",
       run: "gemini --version",
     },
@@ -113,6 +131,9 @@ export const AGENT_PRESETS: AgentPreset[] = [
     apiHosts: ["api.x.ai"],
     setup: {
       runtime: "node",
+      pkg: "@vibe-kit/grok-cli",
+      bin: "grok",
+      args: "--version",
       install: "npm install -g @vibe-kit/grok-cli",
       run: "grok --version",
     },
@@ -124,9 +145,10 @@ export const AGENT_PRESETS: AgentPreset[] = [
     blurb: "Cursor's agent backend.",
     apiHosts: ["api2.cursor.sh", "api.cursor.com", "repo42.cursor.sh"],
     setup: {
-      runtime: "node",
-      install: "npm install -g cursor-agent",
-      run: "cursor-agent --version",
+      runtime: "native",
+      install: "curl https://cursor.com/install -fsS | bash",
+      run: "cursor-agent",
+      requires: "a native installer script (curl | bash) that provisions a platform binary",
     },
   },
   {
@@ -136,9 +158,10 @@ export const AGENT_PRESETS: AgentPreset[] = [
     blurb: "Cursor's command-line agent.",
     apiHosts: ["api2.cursor.sh", "api.cursor.com"],
     setup: {
-      runtime: "node",
-      install: "npm install -g cursor-agent",
-      run: "cursor-agent --version",
+      runtime: "native",
+      install: "curl https://cursor.com/install -fsS | bash",
+      run: "cursor-agent",
+      requires: "a native installer script (curl | bash) that provisions a platform binary",
     },
   },
 ];

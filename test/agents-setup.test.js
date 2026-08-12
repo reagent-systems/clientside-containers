@@ -13,11 +13,13 @@ describe("agent setup commands (OpenShell runtime)", () => {
     }
   });
 
-  it("node-runtime agents install via a package manager (runnable in WebContainer)", () => {
+  it("node-runtime agents install via a package manager and declare pkg/bin", () => {
     const node = AGENT_PRESETS.filter((p) => p.setup.runtime === "node");
     expect(node.length).toBeGreaterThan(0);
     for (const p of node) {
       expect(p.setup.install, `${p.id} install`).toMatch(/^(npm|npx|pnpm|bun|yarn)\b/);
+      expect(p.setup.pkg, `${p.id} pkg`).toBeTruthy();
+      expect(p.setup.bin, `${p.id} bin`).toBeTruthy();
     }
   });
 
