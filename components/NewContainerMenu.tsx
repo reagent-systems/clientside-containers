@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { TIERS, type ContainerTier } from "@/lib/container";
-import { AGENT_PRESETS } from "@/lib/agents";
+import { AGENT_PRESETS, agentPolicyRules } from "@/lib/agents";
 import { OS_IMAGES } from "@/lib/os-images";
 import { CONFIGS } from "@/lib/configs";
 
@@ -82,6 +82,19 @@ export function NewContainerMenu({ onCreate, onClose }: Props) {
                     </a>
                     .
                   </p>
+                  <div className="mt-2 rounded-sm border border-gray-alpha-400 bg-background-200 p-2 text-copy-13">
+                    <p className="text-label-12 font-medium text-gray-700">
+                      Network policy — denies everything else
+                    </p>
+                    <ul className="mt-1 space-y-0.5">
+                      {agentPolicyRules(agentId).map((rule) => (
+                        <li key={rule.host} className="flex justify-between gap-2 text-gray-900">
+                          <span className="truncate font-mono text-copy-13 text-gray-1000">{rule.host}</span>
+                          <span className="shrink-0 text-gray-700">{rule.methods.join(", ")}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </>
               )}
 
