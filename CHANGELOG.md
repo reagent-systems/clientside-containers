@@ -33,6 +33,9 @@ The [autonomous daily loop](./docs/autonomous-loop.md) adds an entry under
 
 ### Added
 
+- The New Container dialog's agent preset picker shows the network policy a
+  preset will get before you create it — every allowed host and method,
+  updating live as you switch presets.
 - A unit test suite on Vitest, covering the policy engine, the container
   factory, and the agent, OS image, and config catalogs. Run it with `npm test`.
 - A `CI` workflow that runs the typecheck, the lint, the tests, the server

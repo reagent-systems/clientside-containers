@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { AGENT_PRESETS, getAgentPreset, policyYamlForAgent } from "@/lib/agents";
+import { AGENT_PRESETS, agentPolicyRules, getAgentPreset, policyYamlForAgent } from "@/lib/agents";
 import { evaluateEgress, parsePolicy } from "@/lib/policy";
 
 const SHARED_DEV_HOSTS = [
@@ -66,5 +66,35 @@ describe("policyYamlForAgent", () => {
 
   it("falls back to the first preset's policy for an unknown id", () => {
     expect(policyYamlForAgent("does-not-exist")).toBe(policyYamlForAgent(AGENT_PRESETS[0].id));
+  });
+});
+
+describe("agentPolicyRules", () => {
+  it.each(AGENT_PRESETS.map((a) => [a.id, a] as const))(
+    "lists %s's API hosts before the shared dev hosts",
+    (_id, agent) => {
+      const rules = agentPolicyRules(agent.id);
+      expect(rules.slice(0, agent.apiHosts.length).map((r) => r.host)).toEqual(agent.apiHosts);
+      expect(rules.slice(agent.apiHosts.length).map((r) => r.host)).toEqual(SHARED_DEV_HOSTS);
+    },
+  );
+
+  it("gives every rule at least one method", () => {
+    for (const agent of AGENT_PRESETS) {
+      for (const rule of agentPolicyRules(agent.id)) {
+        expect(rule.methods.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("matches exactly what policyYamlForAgent embeds", () => {
+    for (const agent of AGENT_PRESETS) {
+      const policy = parsePolicy(policyYamlForAgent(agent.id));
+      expect(policy.network.allow).toEqual(agentPolicyRules(agent.id));
+    }
+  });
+
+  it("falls back to the first preset's rules for an unknown id", () => {
+    expect(agentPolicyRules("does-not-exist")).toEqual(agentPolicyRules(AGENT_PRESETS[0].id));
   });
 });

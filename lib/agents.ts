@@ -87,11 +87,18 @@ export function getAgentPreset(id: string | undefined): AgentPreset {
   return AGENT_PRESETS.find((a) => a.id === id) ?? AGENT_PRESETS[0];
 }
 
+/** The network rules an agent preset's generated policy allows — its own API
+ * hosts, then the shared developer hosts every preset gets. */
+export function agentPolicyRules(id: string | undefined): EgressAllow[] {
+  const agent = getAgentPreset(id);
+  const apiRules = agent.apiHosts.map((host) => ({ host, methods: ["GET", "POST"] }));
+  return [...apiRules, ...SHARED_DEV_HOSTS];
+}
+
 /** Build the OpenShell policy YAML for an agent preset. */
 export function policyYamlForAgent(id: string | undefined): string {
   const agent = getAgentPreset(id);
-  const apiRules = agent.apiHosts.map((host) => ({ host, methods: ["GET", "POST"] }));
-  const rules = [...apiRules, ...SHARED_DEV_HOSTS];
+  const rules = agentPolicyRules(id);
   const allowLines = rules
     .map((r) => `    - host: ${r.host}\n      methods: [${r.methods.join(", ")}]`)
     .join("\n");
