@@ -470,9 +470,9 @@ export function HermesTerminal({
               key={l.id}
               className={
                 l.kind === "in"
-                  ? "whitespace-pre-wrap break-words text-sky-400"
+                  ? `${styles.in} whitespace-pre-wrap break-words`
                   : l.kind === "err"
-                    ? "whitespace-pre-wrap break-words text-red-400"
+                    ? `${styles.err} whitespace-pre-wrap break-words`
                     : l.kind === "sys"
                       ? "whitespace-pre-wrap break-words text-gray-700"
                       : l.kind === "tip"
