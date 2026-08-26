@@ -474,10 +474,10 @@ export function HermesTerminal({
                   : l.kind === "err"
                     ? "whitespace-pre-wrap break-words text-red-400"
                     : l.kind === "sys"
-                      ? "whitespace-pre-wrap break-words text-gray-500"
+                      ? "whitespace-pre-wrap break-words text-gray-700"
                       : l.kind === "tip"
                         ? `${styles.tip} whitespace-pre-wrap break-words`
-                        : "whitespace-pre-wrap break-words text-gray-100"
+                        : "whitespace-pre-wrap break-words text-gray-1000"
               }
             >
               {l.kind === "in" ? `› ${l.text}` : l.text}
