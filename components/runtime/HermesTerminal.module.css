@@ -1,0 +1,79 @@
+.term {
+  background: #0c0c0c;
+  color: #e8e8e8;
+}
+
+.accent {
+  color: #f0a500;
+}
+
+.banner {
+  color: #f0a500;
+  text-shadow: 0 0 18px rgba(240, 165, 0, 0.25);
+}
+
+.caduceus {
+  color: #f0a500;
+  opacity: 0.9;
+}
+
+.panel {
+  border: 1px solid #c97800;
+  border-radius: 2px;
+  background: #101010;
+}
+
+.panelTitle {
+  margin: -1px -1px 0;
+  border: 1px solid #c97800;
+  border-bottom: none;
+  padding: 4px 10px;
+  color: #f0a500;
+  font-size: 12px;
+  width: fit-content;
+  background: #0c0c0c;
+  transform: translate(12px, -8px);
+}
+
+.panelFooter {
+  margin: 0 -1px -1px;
+  border: 1px solid #c97800;
+  border-top: none;
+  padding: 4px 10px;
+  color: #f0a500;
+  font-size: 12px;
+  width: fit-content;
+  background: #0c0c0c;
+  transform: translate(12px, 8px);
+}
+
+.tip {
+  color: #f0a500;
+}
+
+.promptBar {
+  border-top: 1px solid #c97800;
+  background: #0a0a0a;
+}
+
+.input {
+  color: #e8e8e8;
+}
+
+.input::placeholder {
+  color: #555;
+}
+
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: #f0a500;
+  animation: hermes-blink 1s step-end infinite;
+}
+
+@keyframes hermes-blink {
+  50% {
+    opacity: 0;
+  }
+}

@@ -138,6 +138,9 @@ export function Dashboard() {
           onClose={() => setOpenId(null)}
           onStatus={(s) => handleStatus(open.id, s)}
           onPreview={(p) => handlePreview(open.id, p)}
+          onContainerChange={(next) => {
+            setContainers((prev) => prev.map((c) => (c.id === next.id ? next : c)));
+          }}
         />
       )}
 

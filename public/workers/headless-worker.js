@@ -60,20 +60,119 @@ function sandboxedEval(expr) {
 // only an "allow" verdict is followed by a real fetch. The result (status,
 // or the CORS/network failure) is surfaced as-is; nothing is faked.
 async function performEgress(body) {
-  const decision = evaluateEgress(body);
+  const method = String((body && body.method) || "GET").toUpperCase();
+  const decision = evaluateEgress({ host: body && body.host, method });
   if (decision.verdict !== "allow") {
     return { status: 403, body: decision };
   }
   const url = egressUrl(body.host, body.path);
+  const init = {
+    method,
+    mode: "cors",
+    credentials: "omit",
+    redirect: "follow",
+  };
+  if (body && body.headers && typeof body.headers === "object") {
+    init.headers = { ...body.headers };
+  }
+  if (body && body.body !== undefined && body.body !== null && method !== "GET" && method !== "HEAD") {
+    init.body = typeof body.body === "string" ? body.body : JSON.stringify(body.body);
+    if (!init.headers) init.headers = {};
+    if (!init.headers["content-type"] && !init.headers["Content-Type"] && typeof body.body !== "string") {
+      init.headers["content-type"] = "application/json";
+    }
+  }
   try {
-    const res = await fetch(url, { method: String(body.method || "GET").toUpperCase() });
-    return { status: res.status, body: { ...decision, fetched: true, url, ok: res.ok } };
+    const res = await fetch(url, init);
+    let text = "";
+    try {
+      text = await res.text();
+    } catch {
+      text = "";
+    }
+    return {
+      status: res.status,
+      body: {
+        ...decision,
+        fetched: true,
+        url,
+        ok: res.ok,
+        statusText: res.statusText,
+        body: text.slice(0, 64 * 1024),
+        bodyTruncated: text.length > 64 * 1024,
+      },
+    };
   } catch (err) {
     return {
       status: 502,
-      body: { ...decision, fetched: true, url, error: String((err && err.message) || err) },
+      body: {
+        ...decision,
+        fetched: true,
+        url,
+        error: String((err && err.message) || err),
+        cause: "cors_or_network",
+      },
     };
   }
+}
+
+async function agentChat(body) {
+  const host = String((body && body.host) || "");
+  const path = String((body && body.path) || "/v1/chat/completions");
+  const model = String((body && body.model) || "gpt-4o-mini");
+  const apiKey = String((body && body.apiKey) || "");
+  const messages = Array.isArray(body && body.messages) ? body.messages : [];
+
+  if (!host) return { status: 400, body: { error: "host is required" } };
+  if (!apiKey) return { status: 400, body: { error: "apiKey is required" } };
+
+  const egress = await performEgress({
+    host,
+    path,
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      "content-type": "application/json",
+    },
+    body: { model, messages },
+  });
+
+  if (egress.status === 403) return egress;
+  if (egress.body && egress.body.cause === "cors_or_network") {
+    return {
+      status: 502,
+      body: {
+        error: egress.body.error || "Failed to fetch",
+        cause: "cors_or_network",
+        url: egress.body.url,
+      },
+    };
+  }
+  if (!egress.body || !egress.body.ok) {
+    return {
+      status: egress.status || 502,
+      body: {
+        error: (egress.body && egress.body.body) || (egress.body && egress.body.error) || "provider error",
+        cause: "provider",
+        url: egress.body && egress.body.url,
+      },
+    };
+  }
+
+  let data;
+  try {
+    data = JSON.parse(egress.body.body || "{}");
+  } catch {
+    return { status: 502, body: { error: "invalid JSON from provider", cause: "provider" } };
+  }
+  const content =
+    data.choices &&
+    data.choices[0] &&
+    data.choices[0].message &&
+    typeof data.choices[0].message.content === "string"
+      ? data.choices[0].message.content
+      : "";
+  return { status: 200, body: { content, model, url: egress.body.url } };
 }
 
 async function handle(req) {
@@ -90,6 +189,9 @@ async function handle(req) {
   }
   if (path === "/egress" && method === "POST" && body && body.host) {
     return performEgress(body);
+  }
+  if (path === "/agent/chat" && method === "POST") {
+    return agentChat(body || {});
   }
   if (path === "/echo") {
     return { status: 200, body: { method, path, echo: body ?? null } };
@@ -113,9 +215,18 @@ self.onmessage = (event) => {
     return;
   }
   if (msg.type === "request") {
-    Promise.resolve(handle(msg.payload)).then((res) => {
-      self.postMessage({ type: "response", id: msg.id, status: res.status, body: res.body });
-    });
+    Promise.resolve(handle(msg.payload))
+      .then((res) => {
+        self.postMessage({ type: "response", id: msg.id, status: res.status, body: res.body });
+      })
+      .catch((err) => {
+        self.postMessage({
+          type: "response",
+          id: msg.id,
+          status: 500,
+          body: { error: String((err && err.message) || err) },
+        });
+      });
   }
 };
 
