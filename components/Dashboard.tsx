@@ -52,8 +52,12 @@ export function Dashboard() {
     setContainers((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   }
 
-  function handleCreate(tier: ContainerTier, selectionId: string) {
-    const created = buildContainer(tier, selectionId);
+  function handleCreate(
+    tier: ContainerTier,
+    selectionId: string,
+    settingsPatch?: Partial<ContainerSettings>,
+  ) {
+    const created = buildContainer(tier, selectionId, undefined, settingsPatch);
     setCreating(false);
     setContainers((prev) => [...prev, created]);
     setOpenId(created.id);

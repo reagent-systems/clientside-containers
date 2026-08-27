@@ -12,6 +12,7 @@ import { DEFAULT_AGENT_POLICY_YAML } from "./policy";
 import { getAgentPreset, policyYamlForAgent } from "./agents";
 import { getOsImage } from "./os-images";
 import { getConfig } from "./configs";
+import { getHermesProvider, getHermesRelease } from "./hermes";
 
 export type ContainerTier = "agent" | "app" | "minios";
 
@@ -34,6 +35,10 @@ export interface ContainerSettings {
   hermesApiHost?: string;
   /** Hermes terminal: chat completions path. */
   hermesApiPath?: string;
+  /** Hermes terminal: inference provider id (`openai`, `openrouter`, …). */
+  hermesProvider?: string;
+  /** Hermes Agent release id for splash/help (`0.20.6`, `0.10.0`, …). */
+  hermesReleaseId?: string;
   /** Hermes terminal: suppress splash banner. */
   hermesQuiet?: boolean;
   /** Hermes terminal: sticky session id. */
@@ -122,8 +127,13 @@ export function tierUsesEmulator(tier: ContainerTier): boolean {
  * the per-tier choice: an agent id (agent), a bottled-app id (app), or an OS
  * image id (minios).
  */
-export function buildContainer(tier: ContainerTier, selectionId?: string, name?: string): Container {
-  const settings: ContainerSettings = { ...DEFAULT_SETTINGS[tier] };
+export function buildContainer(
+  tier: ContainerTier,
+  selectionId?: string,
+  name?: string,
+  settingsPatch?: Partial<ContainerSettings>,
+): Container {
+  const settings: ContainerSettings = { ...DEFAULT_SETTINGS[tier], ...settingsPatch };
   let configId: string | undefined;
   let agentId: string | undefined;
   let imageId: string | undefined;
@@ -133,6 +143,15 @@ export function buildContainer(tier: ContainerTier, selectionId?: string, name?:
     agentId = getAgentPreset(selectionId).id;
     settings.policyYaml = policyYamlForAgent(agentId);
     prefix = agentId;
+    if (agentId === "hermes") {
+      const release = getHermesRelease(settings.hermesReleaseId);
+      const provider = getHermesProvider(settings.hermesProvider);
+      settings.hermesReleaseId = release.id;
+      settings.hermesProvider = provider.id;
+      settings.hermesModel = settings.hermesModel || provider.defaultModel;
+      settings.hermesApiHost = settings.hermesApiHost || provider.host;
+      settings.hermesApiPath = settings.hermesApiPath || provider.path;
+    }
   } else if (tier === "app") {
     configId = getConfig(selectionId).id;
     prefix = configId;

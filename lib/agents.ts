@@ -2,6 +2,8 @@
 // network allowlist matches the APIs that agent actually talks to. Everything is
 // evaluated client-side by the agent worker.
 
+import { hermesProviderApiHosts } from "./hermes";
+
 export interface EgressAllow {
   host: string;
   methods: string[];
@@ -43,8 +45,9 @@ export const AGENT_PRESETS: AgentPreset[] = [
     id: "hermes",
     label: "Hermes",
     vendor: "Nous Research",
-    blurb: "Hermes Agent terminal — banner, tools/skills, and a chat prompt over OpenAI-compatible inference.",
-    apiHosts: ["api.openai.com", "api.anthropic.com"],
+    blurb:
+      "Hermes Agent terminal — /provider and /model to switch inference, versioned splash, OpenAI-compatible chat.",
+    apiHosts: hermesProviderApiHosts(),
   },
   {
     id: "claude-code",
