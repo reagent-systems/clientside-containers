@@ -130,7 +130,9 @@ export async function ensureNodeCliInstalled(
   onData(
     `\r\n[${profile.label}] npm install ${profile.packageName}@${profile.packageVersion}…\r\n`,
   );
-  // Omit optional native addons (sharp, etc.) — WebContainer cannot load them.
+  // Omit optional native addons for Claude (sharp) — WebContainer cannot load them.
+  // Gemini benefits from optional deps when available; still omit to keep installs
+  // reliable in the browser Node runtime.
   const install = await wc.spawn(
     "npm",
     ["install", "--omit=optional", "--no-fund", "--no-audit"],
@@ -169,6 +171,8 @@ export async function spawnNodeCli(
     COLORTERM: "truecolor",
     FORCE_COLOR: "1",
     CI: "false",
+    COLUMNS: String(opts.cols),
+    LINES: String(opts.rows),
   };
   if (profile.id === "gemini-cli" && opts.apiKey) {
     env.GOOGLE_API_KEY = opts.apiKey;
