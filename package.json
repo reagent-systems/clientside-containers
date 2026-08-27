@@ -1,6 +1,6 @@
 {
   "name": "clientside-containers",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Containers that run entirely in your browser — a grid dashboard with headless, app-bottle, and minified-Linux (v86/WASM) tiers.",
   "license": "GPL-3.0-only",
