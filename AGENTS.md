@@ -98,13 +98,17 @@ components/NewContainerMenu.tsx tier picker
 components/runtime/
   EmulatorScreen.tsx           v86 (app + mini-OS)
   AgentConsole.tsx             agent tier: policy editor + API console
+  HermesTerminal.tsx           Hermes Agent CLI UI
+  NodeCliScreen.tsx            real Claude Code / Gemini CLI via WebContainer
 lib/
   container.ts                 model, tiers, bottled apps
   containers-db.ts             IndexedDB persistence
   policy.ts                    OpenShell policy: parse/serialize/evaluate
   v86-runtime.ts               load + boot the guest
+  hermes.ts / node-cli.ts / webcontainer-runtime.ts
 public/v86/                    engine, BIOS, Linux bzImage
 public/workers/                agent worker (headless-worker.js)
+public/coi-serviceworker.js    COOP/COEP polyfill for WebContainer
 test/                          Vitest unit tests for the lib/ logic
 scripts/check-static-export.sh guards the export's runtime assets + base path
 docs/autonomous-loop.md        specification for the daily self-improvement loop

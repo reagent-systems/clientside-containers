@@ -38,6 +38,10 @@ export interface ContainerSettings {
   hermesQuiet?: boolean;
   /** Hermes terminal: sticky session id. */
   hermesSessionId?: string;
+  /** Claude Code (WebContainer): Anthropic API key. */
+  claudeApiKey?: string;
+  /** Gemini CLI (WebContainer): Gemini API key. */
+  geminiApiKey?: string;
 }
 
 /** A line from the Hermes (or agent) transcript, persisted with the container. */

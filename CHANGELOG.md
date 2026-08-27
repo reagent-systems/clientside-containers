@@ -10,6 +10,8 @@ The [autonomous daily loop](./docs/autonomous-loop.md) adds an entry under
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-27
+
 ### Fixed
 
 - The Agent Console's `/eval` sample can no longer reach the network directly.
@@ -33,6 +35,16 @@ The [autonomous daily loop](./docs/autonomous-loop.md) adds an entry under
 
 ### Added
 
+- **Hermes Agent terminal** — opening the Hermes preset shows a CLI-style
+  UI with banner, tools/skills splash, slash commands, and policy-gated chat
+  over OpenAI-compatible inference.
+- **Real Claude Code and Gemini CLI** — those presets boot the actual npm
+  packages inside a WebContainer Node runtime with an xterm.js PTY. Gemini
+  uses `@google/gemini-cli`; Claude Code is pinned to
+  `@anthropic-ai/claude-code@2.1.112` (last JS `cli.js` release — newer
+  versions are native-only and cannot run in WebContainer). Requires
+  cross-origin isolation (COOP/COEP in dev, or `public/coi-serviceworker.js`
+  for static export).
 - The New Container dialog's agent preset picker shows the network policy a
   preset will get before you create it — every allowed host and method,
   updating live as you switch presets.
@@ -52,4 +64,5 @@ The [autonomous daily loop](./docs/autonomous-loop.md) adds an entry under
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`,
   issue templates, a pull request template, and `CODEOWNERS`.
 
-[Unreleased]: https://github.com/reagent-systems/clientside-containers/commits/main
+[Unreleased]: https://github.com/reagent-systems/clientside-containers/compare/v0.2.0...main
+[0.2.0]: https://github.com/reagent-systems/clientside-containers/compare/v0.1.0...v0.2.0

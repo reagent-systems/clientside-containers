@@ -25,6 +25,7 @@ REQUIRED=(
   "v86/libv86.mjs"
   "v86/v86.wasm"
   "workers/headless-worker.js"
+  "coi-serviceworker.js"
 )
 for rel in "${REQUIRED[@]}"; do
   [[ -f "$OUT/$rel" ]] || fail "out/$rel is missing — the runtime cannot start"

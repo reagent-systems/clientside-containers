@@ -2,9 +2,11 @@
 
 import { useEffect } from "react";
 import { TIERS, type Container, type ContainerPreview } from "@/lib/container";
+import { isNodeCliAgent } from "@/lib/node-cli";
 import { EmulatorScreen } from "./runtime/EmulatorScreen";
 import { AgentConsole } from "./runtime/AgentConsole";
 import { HermesTerminal } from "./runtime/HermesTerminal";
+import { NodeCliScreen } from "./runtime/NodeCliScreen";
 
 interface Props {
   container: Container;
@@ -24,6 +26,22 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
   }, [onClose]);
 
   const isHermes = container.tier === "agent" && container.agentId === "hermes";
+  const isNodeCli = isNodeCliAgent(container);
+  const stageTitle = isHermes
+    ? "ollama launch hermes"
+    : container.agentId === "claude-code"
+      ? "claude"
+      : container.agentId === "gemini-cli"
+        ? "gemini"
+        : container.name;
+  const stageBadge = isHermes
+    ? "Hermes Agent"
+    : container.agentId === "claude-code"
+      ? "Claude Code"
+      : container.agentId === "gemini-cli"
+        ? "Gemini CLI"
+        : TIERS[container.tier].label;
+  const hideFooter = isHermes || isNodeCli;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gray-alpha-800">
@@ -39,10 +57,8 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
             <span className="h-3 w-3 rounded-full bg-gray-400" />
             <span className="h-3 w-3 rounded-full bg-gray-400" />
           </div>
-          <span className="text-heading-14 text-gray-1000">
-            {isHermes ? "ollama launch hermes" : container.name}
-          </span>
-          <span className="badge">{isHermes ? "Hermes Agent" : TIERS[container.tier].label}</span>
+          <span className="text-heading-14 text-gray-1000">{stageTitle}</span>
+          <span className="badge">{stageBadge}</span>
         </div>
         <button type="button" onClick={onClose} className="btn-tertiary btn-small">
           Close
@@ -57,6 +73,13 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
               onPreview={onPreview}
               onContainerChange={onContainerChange}
             />
+          ) : isNodeCli ? (
+            <NodeCliScreen
+              container={container}
+              onStatus={onStatus}
+              onPreview={onPreview}
+              onContainerChange={onContainerChange}
+            />
           ) : (
             <AgentConsole container={container} onStatus={onStatus} onPreview={onPreview} />
           )
@@ -64,7 +87,7 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
           <EmulatorScreen container={container} onStatus={onStatus} onPreview={onPreview} />
         )}
       </div>
-      {!isHermes && (
+      {!hideFooter && (
         <footer className="border-t border-gray-alpha-400 bg-background-100 px-4 py-1.5 text-center text-copy-13 text-gray-700">
           {container.tier === "agent"
             ? "OpenShell-style agent runtime — API calls and policy egress decisions."

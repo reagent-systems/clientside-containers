@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import { BASE_PATH } from "@/lib/base-path";
@@ -48,7 +49,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body>{children}</body>
+      <body>
+        {/* COI service worker enables SharedArrayBuffer for WebContainer on hosts
+            that cannot set COOP/COEP headers (e.g. static GitHub Pages). */}
+        <Script src={`${BASE_PATH}/coi-serviceworker.js`} strategy="beforeInteractive" />
+        {children}
+      </body>
     </html>
   );
 }
