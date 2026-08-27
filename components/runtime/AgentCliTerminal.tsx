@@ -21,20 +21,7 @@ interface TermLine {
   text: string;
 }
 
-export interface AgentCliTheme {
-  term: string;
-  accent: string;
-  banner: string;
-  panel: string;
-  panelTitle: string;
-  panelFooter: string;
-  tip: string;
-  promptBar: string;
-  input: string;
-  err: string;
-  in: string;
-  cursor: string;
-}
+export type AgentCliTheme = { readonly [key: string]: string };
 
 export interface AgentCliProfile {
   id: string;
