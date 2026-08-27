@@ -10,6 +10,15 @@ The [autonomous daily loop](./docs/autonomous-loop.md) adds an entry under
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-27
+
+### Added
+
+- A detailed **devlog** for the WebContainer CLI work
+  (`docs/devlog/2026-08-27-webcontainer-clis.md`), written in simplified
+  technical English, with architecture drawings for the boot path and a
+  fake-vs-real comparison.
+
 ## [0.2.0] - 2026-08-27
 
 ### Fixed
@@ -64,5 +73,6 @@ The [autonomous daily loop](./docs/autonomous-loop.md) adds an entry under
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`,
   issue templates, a pull request template, and `CODEOWNERS`.
 
-[Unreleased]: https://github.com/reagent-systems/clientside-containers/compare/v0.2.0...main
+[Unreleased]: https://github.com/reagent-systems/clientside-containers/compare/v0.2.1...main
+[0.2.1]: https://github.com/reagent-systems/clientside-containers/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/reagent-systems/clientside-containers/compare/v0.1.0...v0.2.0

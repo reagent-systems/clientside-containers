@@ -47,10 +47,11 @@ served as static assets from `public/v86/`, so there is nothing to install.
 The **New container** dialog offers preconfigured choices per tier:
 
 - **Agent presets** — OpenClaw, NanoClaw, Hermes; Claude Code and Gemini CLI
-  run the real npm CLIs inside a WebContainer Node runtime (xterm PTY)
-  Code, Cursor, and Cursor CLI. Each ships an OpenShell policy whose network
-  allowlist matches that agent's APIs (e.g. `api.anthropic.com`,
+  run the real npm CLIs inside a WebContainer Node runtime (xterm PTY);
+  also Grok Code, Cursor, and Cursor CLI. Each ships an OpenShell policy whose
+  network allowlist matches that agent's APIs (e.g. `api.anthropic.com`,
   `generativelanguage.googleapis.com`, `api.x.ai`, `api2.cursor.sh`).
+  See the [WebContainer CLI devlog](docs/devlog/2026-08-27-webcontainer-clis.md).
 - **OS images** (Mini OS) — Buildroot Linux, **Ubuntu 10.04 Desktop** (GNOME live
   CD, fetched at build/deploy time), and a miniature **Windows 1.01** (1.47 MB
   floppy). Windows and Buildroot are bundled under `public/v86/`; Ubuntu is
