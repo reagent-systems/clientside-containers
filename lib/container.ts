@@ -12,16 +12,6 @@ import { DEFAULT_AGENT_POLICY_YAML } from "./policy";
 import { getAgentPreset, policyYamlForAgent } from "./agents";
 import { getOsImage } from "./os-images";
 import { getConfig } from "./configs";
-import {
-  CLAUDE_CODE_DEFAULT_HOST,
-  CLAUDE_CODE_DEFAULT_MODEL,
-  CLAUDE_CODE_DEFAULT_PATH,
-} from "./claude-code";
-import {
-  GEMINI_CLI_DEFAULT_HOST,
-  GEMINI_CLI_DEFAULT_MODEL,
-  GEMINI_CLI_DEFAULT_PATH,
-} from "./gemini-cli";
 
 export type ContainerTier = "agent" | "app" | "minios";
 
@@ -48,30 +38,10 @@ export interface ContainerSettings {
   hermesQuiet?: boolean;
   /** Hermes terminal: sticky session id. */
   hermesSessionId?: string;
-  /** Claude Code terminal: model id. */
-  claudeModel?: string;
-  /** Claude Code terminal: Anthropic API key. */
+  /** Claude Code (WebContainer): Anthropic API key. */
   claudeApiKey?: string;
-  /** Claude Code terminal: API host. */
-  claudeApiHost?: string;
-  /** Claude Code terminal: Messages API path. */
-  claudeApiPath?: string;
-  /** Claude Code terminal: suppress splash banner. */
-  claudeQuiet?: boolean;
-  /** Claude Code terminal: sticky session id. */
-  claudeSessionId?: string;
-  /** Gemini CLI terminal: model id. */
-  geminiModel?: string;
-  /** Gemini CLI terminal: Gemini API key. */
+  /** Gemini CLI (WebContainer): Gemini API key. */
   geminiApiKey?: string;
-  /** Gemini CLI terminal: API host. */
-  geminiApiHost?: string;
-  /** Gemini CLI terminal: chat completions path. */
-  geminiApiPath?: string;
-  /** Gemini CLI terminal: suppress splash banner. */
-  geminiQuiet?: boolean;
-  /** Gemini CLI terminal: sticky session id. */
-  geminiSessionId?: string;
 }
 
 /** A line from the Hermes (or agent) transcript, persisted with the container. */
@@ -167,15 +137,6 @@ export function buildContainer(tier: ContainerTier, selectionId?: string, name?:
     agentId = getAgentPreset(selectionId).id;
     settings.policyYaml = policyYamlForAgent(agentId);
     prefix = agentId;
-    if (agentId === "claude-code") {
-      settings.claudeModel = settings.claudeModel || CLAUDE_CODE_DEFAULT_MODEL;
-      settings.claudeApiHost = settings.claudeApiHost || CLAUDE_CODE_DEFAULT_HOST;
-      settings.claudeApiPath = settings.claudeApiPath || CLAUDE_CODE_DEFAULT_PATH;
-    } else if (agentId === "gemini-cli") {
-      settings.geminiModel = settings.geminiModel || GEMINI_CLI_DEFAULT_MODEL;
-      settings.geminiApiHost = settings.geminiApiHost || GEMINI_CLI_DEFAULT_HOST;
-      settings.geminiApiPath = settings.geminiApiPath || GEMINI_CLI_DEFAULT_PATH;
-    }
   } else if (tier === "app") {
     configId = getConfig(selectionId).id;
     prefix = configId;

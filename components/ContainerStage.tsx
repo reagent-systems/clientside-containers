@@ -2,11 +2,11 @@
 
 import { useEffect } from "react";
 import { TIERS, type Container, type ContainerPreview } from "@/lib/container";
+import { isNodeCliAgent } from "@/lib/node-cli";
 import { EmulatorScreen } from "./runtime/EmulatorScreen";
 import { AgentConsole } from "./runtime/AgentConsole";
 import { HermesTerminal } from "./runtime/HermesTerminal";
-import { ClaudeCodeTerminal } from "./runtime/ClaudeCodeTerminal";
-import { GeminiCliTerminal } from "./runtime/GeminiCliTerminal";
+import { NodeCliScreen } from "./runtime/NodeCliScreen";
 
 interface Props {
   container: Container;
@@ -15,22 +15,6 @@ interface Props {
   onPreview: (preview: ContainerPreview) => void;
   onContainerChange?: (container: Container) => void;
 }
-
-type CliAgentKind = "hermes" | "claude-code" | "gemini-cli";
-
-function cliAgentKind(container: Container): CliAgentKind | null {
-  if (container.tier !== "agent") return null;
-  if (container.agentId === "hermes") return "hermes";
-  if (container.agentId === "claude-code") return "claude-code";
-  if (container.agentId === "gemini-cli") return "gemini-cli";
-  return null;
-}
-
-const CLI_STAGE: Record<CliAgentKind, { title: string; badge: string }> = {
-  hermes: { title: "ollama launch hermes", badge: "Hermes Agent" },
-  "claude-code": { title: "claude", badge: "Claude Code" },
-  "gemini-cli": { title: "gemini", badge: "Gemini CLI" },
-};
 
 export function ContainerStage({ container, onClose, onStatus, onPreview, onContainerChange }: Props) {
   useEffect(() => {
@@ -41,8 +25,23 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const cli = cliAgentKind(container);
-  const stage = cli ? CLI_STAGE[cli] : null;
+  const isHermes = container.tier === "agent" && container.agentId === "hermes";
+  const isNodeCli = isNodeCliAgent(container);
+  const stageTitle = isHermes
+    ? "ollama launch hermes"
+    : container.agentId === "claude-code"
+      ? "claude"
+      : container.agentId === "gemini-cli"
+        ? "gemini"
+        : container.name;
+  const stageBadge = isHermes
+    ? "Hermes Agent"
+    : container.agentId === "claude-code"
+      ? "Claude Code"
+      : container.agentId === "gemini-cli"
+        ? "Gemini CLI"
+        : TIERS[container.tier].label;
+  const hideFooter = isHermes || isNodeCli;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gray-alpha-800">
@@ -58,10 +57,8 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
             <span className="h-3 w-3 rounded-full bg-gray-400" />
             <span className="h-3 w-3 rounded-full bg-gray-400" />
           </div>
-          <span className="text-heading-14 text-gray-1000">
-            {stage ? stage.title : container.name}
-          </span>
-          <span className="badge">{stage ? stage.badge : TIERS[container.tier].label}</span>
+          <span className="text-heading-14 text-gray-1000">{stageTitle}</span>
+          <span className="badge">{stageBadge}</span>
         </div>
         <button type="button" onClick={onClose} className="btn-tertiary btn-small">
           Close
@@ -69,22 +66,15 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
       </header>
       <div className="flex-1 overflow-hidden bg-black">
         {container.tier === "agent" ? (
-          cli === "hermes" ? (
+          isHermes ? (
             <HermesTerminal
               container={container}
               onStatus={onStatus}
               onPreview={onPreview}
               onContainerChange={onContainerChange}
             />
-          ) : cli === "claude-code" ? (
-            <ClaudeCodeTerminal
-              container={container}
-              onStatus={onStatus}
-              onPreview={onPreview}
-              onContainerChange={onContainerChange}
-            />
-          ) : cli === "gemini-cli" ? (
-            <GeminiCliTerminal
+          ) : isNodeCli ? (
+            <NodeCliScreen
               container={container}
               onStatus={onStatus}
               onPreview={onPreview}
@@ -97,7 +87,7 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
           <EmulatorScreen container={container} onStatus={onStatus} onPreview={onPreview} />
         )}
       </div>
-      {!cli && (
+      {!hideFooter && (
         <footer className="border-t border-gray-alpha-400 bg-background-100 px-4 py-1.5 text-center text-copy-13 text-gray-700">
           {container.tier === "agent"
             ? "OpenShell-style agent runtime — API calls and policy egress decisions."

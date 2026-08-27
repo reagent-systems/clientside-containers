@@ -46,7 +46,8 @@ served as static assets from `public/v86/`, so there is nothing to install.
 
 The **New container** dialog offers preconfigured choices per tier:
 
-- **Agent presets** — OpenClaw, NanoClaw, Hermes, Claude Code, Gemini CLI, Grok
+- **Agent presets** — OpenClaw, NanoClaw, Hermes; Claude Code and Gemini CLI
+  run the real npm CLIs inside a WebContainer Node runtime (xterm PTY)
   Code, Cursor, and Cursor CLI. Each ships an OpenShell policy whose network
   allowlist matches that agent's APIs (e.g. `api.anthropic.com`,
   `generativelanguage.googleapis.com`, `api.x.ai`, `api2.cursor.sh`).
@@ -95,6 +96,9 @@ components/
   runtime/
     EmulatorScreen.tsx  Mounts v86: serial terminal (Linux) or VGA (Windows)
     AgentConsole.tsx    Agent tier: YAML policy editor + API/egress console
+    HermesTerminal.tsx  Hermes Agent CLI UI
+    NodeCliScreen.tsx   Real Claude Code / Gemini CLI via WebContainer + xterm
+    EmulatorScreen.tsx  v86 guest for app + mini-OS tiers
 lib/
   container.ts      Container model, tiers, bottled-app catalog
   containers-db.ts  IndexedDB persistence (containers survive reloads)

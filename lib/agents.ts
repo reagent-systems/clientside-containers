@@ -50,14 +50,15 @@ export const AGENT_PRESETS: AgentPreset[] = [
     id: "claude-code",
     label: "Claude Code",
     vendor: "Anthropic",
-    blurb: "Claude Code terminal — banner, slash commands, Anthropic Messages API chat.",
+    blurb:
+      "Real Claude Code CLI (@anthropic-ai/claude-code) inside a WebContainer Node runtime.",
     apiHosts: ["api.anthropic.com"],
   },
   {
     id: "gemini-cli",
     label: "Gemini CLI",
     vendor: "Google",
-    blurb: "Gemini CLI terminal — banner, /model /tools, Google OpenAI-compatible chat.",
+    blurb: "Real Gemini CLI (@google/gemini-cli) inside a WebContainer Node runtime.",
     apiHosts: ["generativelanguage.googleapis.com", "oauth2.googleapis.com"],
   },
   {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TIERS, tierUsesEmulator, type Container, type ContainerSettings } from "@/lib/container";
+import { getNodeCliProfile } from "@/lib/node-cli";
 
 interface Props {
   container: Container;
@@ -19,10 +20,12 @@ const NETWORKS: { value: ContainerSettings["network"]; label: string }[] = [
 const MEMORY_OPTIONS = [64, 128, 192, 256, 384, 512];
 
 export function SettingsModal({ container, onSave, onDelete, onClose }: Props) {
+  const nodeCli = getNodeCliProfile(container.agentId);
   const [name, setName] = useState(container.name);
   const [memoryMb, setMemoryMb] = useState(container.settings.memoryMb);
   const [network, setNetwork] = useState(container.settings.network);
   const [autostart, setAutostart] = useState(container.settings.autostart);
+  const [apiKey, setApiKey] = useState(() => (nodeCli ? nodeCli.readApiKey(container.settings) : ""));
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
@@ -71,6 +74,22 @@ export function SettingsModal({ container, onSave, onDelete, onClose }: Props) {
           ))}
         </select>
 
+        {nodeCli && (
+          <>
+            <label className="label mt-4" htmlFor="settings-node-cli-key">
+              {nodeCli.apiKeyEnv}
+            </label>
+            <input
+              id="settings-node-cli-key"
+              className="input"
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              autoComplete="off"
+            />
+          </>
+        )}
+
         <label className="mt-4 flex items-center gap-2 text-copy-14 text-gray-1000">
           <input
             type="checkbox"
@@ -101,7 +120,14 @@ export function SettingsModal({ container, onSave, onDelete, onClose }: Props) {
             </button>
             <button
               type="button"
-              onClick={() => onSave(name, { memoryMb, network, autostart })}
+              onClick={() =>
+                onSave(name, {
+                  memoryMb,
+                  network,
+                  autostart,
+                  ...(nodeCli ? nodeCli.writeApiKey(apiKey) : {}),
+                })
+              }
               className="btn-primary btn-small"
             >
               Save

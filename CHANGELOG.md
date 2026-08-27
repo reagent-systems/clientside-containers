@@ -33,11 +33,11 @@ The [autonomous daily loop](./docs/autonomous-loop.md) adds an entry under
 
 ### Added
 
-- Claude Code and Gemini CLI open the same kind of terminal UI as Hermes:
-  ASCII banner, tools panel, slash commands (`/model`, `/key`, `/help`, …),
-  and policy-gated chat. Claude uses the Anthropic Messages API; Gemini uses
-  Google's OpenAI-compatible endpoint. Other agent presets still use the
-  Agent Console.
+- Claude Code and Gemini CLI now boot the **real** npm CLIs
+  (`@anthropic-ai/claude-code`, `@google/gemini-cli`) inside a WebContainer
+  Node runtime with an xterm.js PTY — not a fake chat shell. Requires
+  cross-origin isolation (COOP/COEP in `next dev`/`next start`, or
+  `public/coi-serviceworker.js` for static export).
 - The New Container dialog's agent preset picker shows the network policy a
   preset will get before you create it — every allowed host and method,
   updating live as you switch presets.
