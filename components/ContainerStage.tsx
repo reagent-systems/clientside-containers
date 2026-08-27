@@ -4,15 +4,17 @@ import { useEffect } from "react";
 import { TIERS, type Container, type ContainerPreview } from "@/lib/container";
 import { EmulatorScreen } from "./runtime/EmulatorScreen";
 import { AgentConsole } from "./runtime/AgentConsole";
+import { HermesTerminal } from "./runtime/HermesTerminal";
 
 interface Props {
   container: Container;
   onClose: () => void;
   onStatus: (status: Container["status"]) => void;
   onPreview: (preview: ContainerPreview) => void;
+  onContainerChange?: (container: Container) => void;
 }
 
-export function ContainerStage({ container, onClose, onStatus, onPreview }: Props) {
+export function ContainerStage({ container, onClose, onStatus, onPreview, onContainerChange }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -20,6 +22,8 @@ export function ContainerStage({ container, onClose, onStatus, onPreview }: Prop
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  const isHermes = container.tier === "agent" && container.agentId === "hermes";
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gray-alpha-800">
@@ -35,8 +39,10 @@ export function ContainerStage({ container, onClose, onStatus, onPreview }: Prop
             <span className="h-3 w-3 rounded-full bg-gray-400" />
             <span className="h-3 w-3 rounded-full bg-gray-400" />
           </div>
-          <span className="text-heading-14 text-gray-1000">{container.name}</span>
-          <span className="badge">{TIERS[container.tier].label}</span>
+          <span className="text-heading-14 text-gray-1000">
+            {isHermes ? "ollama launch hermes" : container.name}
+          </span>
+          <span className="badge">{isHermes ? "Hermes Agent" : TIERS[container.tier].label}</span>
         </div>
         <button type="button" onClick={onClose} className="btn-tertiary btn-small">
           Close
@@ -44,18 +50,29 @@ export function ContainerStage({ container, onClose, onStatus, onPreview }: Prop
       </header>
       <div className="flex-1 overflow-hidden bg-black">
         {container.tier === "agent" ? (
-          <AgentConsole container={container} onStatus={onStatus} onPreview={onPreview} />
+          isHermes ? (
+            <HermesTerminal
+              container={container}
+              onStatus={onStatus}
+              onPreview={onPreview}
+              onContainerChange={onContainerChange}
+            />
+          ) : (
+            <AgentConsole container={container} onStatus={onStatus} onPreview={onPreview} />
+          )
         ) : (
           <EmulatorScreen container={container} onStatus={onStatus} onPreview={onPreview} />
         )}
       </div>
-      <footer className="border-t border-gray-alpha-400 bg-background-100 px-4 py-1.5 text-center text-copy-13 text-gray-700">
-        {container.tier === "agent"
-          ? "OpenShell-style agent runtime — API calls and policy egress decisions."
-          : container.tier === "app"
-            ? "Linux container running its config. Type into the terminal once the prompt appears."
-            : "x86 OS via WebAssembly. Click the screen, then type."}
-      </footer>
+      {!isHermes && (
+        <footer className="border-t border-gray-alpha-400 bg-background-100 px-4 py-1.5 text-center text-copy-13 text-gray-700">
+          {container.tier === "agent"
+            ? "OpenShell-style agent runtime — API calls and policy egress decisions."
+            : container.tier === "app"
+              ? "Linux container running its config. Type into the terminal once the prompt appears."
+              : "x86 OS via WebAssembly. Click the screen, then type."}
+        </footer>
+      )}
     </div>
   );
 }

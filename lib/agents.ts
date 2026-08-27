@@ -43,7 +43,7 @@ export const AGENT_PRESETS: AgentPreset[] = [
     id: "hermes",
     label: "Hermes",
     vendor: "Nous Research",
-    blurb: "Hermes agent over OpenAI-compatible inference.",
+    blurb: "Hermes Agent terminal — banner, tools/skills, and a chat prompt over OpenAI-compatible inference.",
     apiHosts: ["api.openai.com", "api.anthropic.com"],
   },
   {

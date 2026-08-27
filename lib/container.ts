@@ -26,6 +26,24 @@ export interface ContainerSettings {
   autostart: boolean;
   /** OpenShell-style policy (agent tier). YAML text. */
   policyYaml?: string;
+  /** Hermes terminal: model id shown in the prompt. */
+  hermesModel?: string;
+  /** Hermes terminal: inference API key (IndexedDB only). */
+  hermesApiKey?: string;
+  /** Hermes terminal: OpenAI-compatible API host. */
+  hermesApiHost?: string;
+  /** Hermes terminal: chat completions path. */
+  hermesApiPath?: string;
+  /** Hermes terminal: suppress splash banner. */
+  hermesQuiet?: boolean;
+  /** Hermes terminal: sticky session id. */
+  hermesSessionId?: string;
+}
+
+/** A line from the Hermes (or agent) transcript, persisted with the container. */
+export interface AgentTranscriptLine {
+  kind: "out" | "in" | "sys" | "err" | "tip";
+  text: string;
 }
 
 /** A thumbnail of a container's interface, captured while it ran. */
@@ -51,6 +69,8 @@ export interface Container {
   settings: ContainerSettings;
   /** Last captured preview of the running interface. */
   preview?: ContainerPreview;
+  /** Persisted Hermes / agent terminal transcript. */
+  agentTranscript?: AgentTranscriptLine[];
 }
 
 export const TIERS: Record<
