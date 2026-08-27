@@ -51,7 +51,7 @@ export const AGENT_PRESETS: AgentPreset[] = [
     label: "Claude Code",
     vendor: "Anthropic",
     blurb:
-      "Real Claude Code CLI (@anthropic-ai/claude-code) inside a WebContainer Node runtime.",
+      "Real Claude Code CLI (@anthropic-ai/claude-code@2.1.112) in a WebContainer Node runtime.",
     apiHosts: ["api.anthropic.com"],
   },
   {

@@ -6,11 +6,12 @@ import { buildContainer } from "@/lib/container";
 describe("node CLI profiles", () => {
   it("maps Claude Code and Gemini CLI to real npm packages", () => {
     expect(NODE_CLI_PROFILES["claude-code"].packageName).toBe("@anthropic-ai/claude-code");
-    expect(NODE_CLI_PROFILES["claude-code"].bin).toBe("claude");
+    expect(NODE_CLI_PROFILES["claude-code"].packageVersion).toBe("2.1.112");
+    expect(NODE_CLI_PROFILES["claude-code"].entry).toContain("cli.js");
     expect(NODE_CLI_PROFILES["claude-code"].apiKeyEnv).toBe("ANTHROPIC_API_KEY");
 
     expect(NODE_CLI_PROFILES["gemini-cli"].packageName).toBe("@google/gemini-cli");
-    expect(NODE_CLI_PROFILES["gemini-cli"].bin).toBe("gemini");
+    expect(NODE_CLI_PROFILES["gemini-cli"].entry).toContain("gemini.js");
     expect(NODE_CLI_PROFILES["gemini-cli"].apiKeyEnv).toBe("GEMINI_API_KEY");
   });
 

@@ -54,7 +54,7 @@ function packageTree(profile: NodeCliProfile): FileSystemTree {
             private: true,
             type: "module",
             dependencies: {
-              [profile.packageName]: "*",
+              [profile.packageName]: profile.packageVersion,
             },
           },
           null,
@@ -64,18 +64,35 @@ function packageTree(profile: NodeCliProfile): FileSystemTree {
     },
     "README.md": {
       file: {
-        contents: `# ${profile.label}\n\nReal ${profile.vendor} CLI inside a WebContainer.\n`,
+        contents: `# ${profile.label}\n\nReal ${profile.vendor} CLI (${profile.packageName}@${profile.packageVersion}) inside a WebContainer.\n`,
       },
     },
   };
 }
 
 async function ensureWorkdir(wc: WebContainer, profile: NodeCliProfile): Promise<void> {
+  let needsMount = true;
   try {
-    await wc.fs.readdir(profile.workdir);
+    const raw = await wc.fs.readFile(`${profile.workdir}/package.json`, "utf-8");
+    const parsed = JSON.parse(String(raw)) as {
+      dependencies?: Record<string, string>;
+    };
+    if (parsed.dependencies?.[profile.packageName] === profile.packageVersion) {
+      needsMount = false;
+    }
   } catch {
+    // missing workdir or package.json
+  }
+  if (!needsMount) return;
+  try {
     await wc.fs.mkdir(profile.workdir, { recursive: true });
-    await wc.mount(packageTree(profile), { mountPoint: profile.workdir });
+  } catch {
+    // exists
+  }
+  await wc.mount(packageTree(profile), { mountPoint: profile.workdir });
+  // Force a reinstall when the pinned version changes.
+  for (const key of [...installed]) {
+    if (key.startsWith(`${profile.id}@`)) installed.delete(key);
   }
 }
 
@@ -104,18 +121,26 @@ export async function ensureNodeCliInstalled(
   const wc = await bootWebContainer();
   await ensureWorkdir(wc, profile);
 
-  if (installed.has(profile.id)) {
+  const installKey = `${profile.id}@${profile.packageVersion}`;
+  if (installed.has(installKey)) {
     onData(`\r\n[${profile.label}] dependencies already installed\r\n`);
     return wc;
   }
 
-  onData(`\r\n[${profile.label}] npm install ${profile.packageName}…\r\n`);
-  const install = await wc.spawn("npm", ["install"], { cwd: profile.workdir });
+  onData(
+    `\r\n[${profile.label}] npm install ${profile.packageName}@${profile.packageVersion}…\r\n`,
+  );
+  // Omit optional native addons (sharp, etc.) — WebContainer cannot load them.
+  const install = await wc.spawn(
+    "npm",
+    ["install", "--omit=optional", "--no-fund", "--no-audit"],
+    { cwd: profile.workdir },
+  );
   const code = await pipeProcessOutput(install, onData);
   if (code !== 0) {
     throw new Error(`npm install failed (exit ${code})`);
   }
-  installed.add(profile.id);
+  installed.add(installKey);
   onData(`\r\n[${profile.label}] install complete\r\n`);
   return wc;
 }
@@ -126,7 +151,7 @@ export type SpawnedCli = {
 };
 
 /**
- * Spawn the real CLI binary with a PTY-sized terminal and API key env.
+ * Spawn the real CLI via `node <entry>` with a PTY-sized terminal and API key env.
  */
 export async function spawnNodeCli(
   profile: NodeCliProfile,
@@ -143,14 +168,14 @@ export async function spawnNodeCli(
     TERM: "xterm-256color",
     COLORTERM: "truecolor",
     FORCE_COLOR: "1",
+    CI: "false",
   };
-  // Gemini also accepts GOOGLE_API_KEY in some versions.
   if (profile.id === "gemini-cli" && opts.apiKey) {
     env.GOOGLE_API_KEY = opts.apiKey;
   }
 
-  opts.onData(`\r\n[${profile.label}] starting \`${profile.bin}\`…\r\n`);
-  const process = await wc.spawn("npx", ["--no-install", profile.bin], {
+  opts.onData(`\r\n[${profile.label}] starting \`node ${profile.entry}\`…\r\n`);
+  const process = await wc.spawn("node", [profile.entry], {
     cwd: profile.workdir,
     terminal: { cols: opts.cols, rows: opts.rows },
     env,
