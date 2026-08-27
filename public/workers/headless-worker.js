@@ -117,26 +117,97 @@ async function performEgress(body) {
 }
 
 async function agentChat(body) {
+  const style = String((body && body.apiStyle) || "openai");
+  if (style === "anthropic") return agentChatAnthropic(body);
+  return agentChatOpenAI(body);
+}
+
+async function agentChatOpenAI(body) {
   const host = String((body && body.host) || "");
   const path = String((body && body.path) || "/v1/chat/completions");
   const model = String((body && body.model) || "gpt-4o-mini");
+  const apiKey = String((body && body.apiKey) || "");
+  const allowEmptyKey = Boolean(body && body.allowEmptyKey);
+  const messages = Array.isArray(body && body.messages) ? body.messages : [];
+
+  if (!host) return { status: 400, body: { error: "host is required" } };
+  if (!apiKey && !allowEmptyKey) return { status: 400, body: { error: "apiKey is required" } };
+
+  const headers = { "content-type": "application/json" };
+  if (apiKey) headers.authorization = `Bearer ${apiKey}`;
+
+  const egress = await performEgress({
+    host,
+    path,
+    method: "POST",
+    headers,
+    body: { model, messages },
+  });
+
+  return finishChatEgress(egress, model, (data) => {
+    const content =
+      data.choices &&
+      data.choices[0] &&
+      data.choices[0].message &&
+      typeof data.choices[0].message.content === "string"
+        ? data.choices[0].message.content
+        : "";
+    return content;
+  });
+}
+
+async function agentChatAnthropic(body) {
+  const host = String((body && body.host) || "api.anthropic.com");
+  const path = String((body && body.path) || "/v1/messages");
+  const model = String((body && body.model) || "claude-sonnet-4-20250514");
   const apiKey = String((body && body.apiKey) || "");
   const messages = Array.isArray(body && body.messages) ? body.messages : [];
 
   if (!host) return { status: 400, body: { error: "host is required" } };
   if (!apiKey) return { status: 400, body: { error: "apiKey is required" } };
 
+  let system = "";
+  const anthropicMessages = [];
+  for (const m of messages) {
+    if (!m || typeof m !== "object") continue;
+    if (m.role === "system") {
+      system = system ? `${system}\n${m.content}` : String(m.content || "");
+      continue;
+    }
+    if (m.role === "user" || m.role === "assistant") {
+      anthropicMessages.push({ role: m.role, content: String(m.content || "") });
+    }
+  }
+
+  const payload = {
+    model,
+    max_tokens: 4096,
+    messages: anthropicMessages,
+  };
+  if (system) payload.system = system;
+
   const egress = await performEgress({
     host,
     path,
     method: "POST",
     headers: {
-      authorization: `Bearer ${apiKey}`,
       "content-type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
     },
-    body: { model, messages },
+    body: payload,
   });
 
+  return finishChatEgress(egress, model, (data) => {
+    if (!Array.isArray(data.content)) return "";
+    return data.content
+      .filter((b) => b && b.type === "text" && typeof b.text === "string")
+      .map((b) => b.text)
+      .join("");
+  });
+}
+
+async function finishChatEgress(egress, model, pickContent) {
   if (egress.status === 403) return egress;
   if (egress.body && egress.body.cause === "cors_or_network") {
     return {
@@ -165,13 +236,7 @@ async function agentChat(body) {
   } catch {
     return { status: 502, body: { error: "invalid JSON from provider", cause: "provider" } };
   }
-  const content =
-    data.choices &&
-    data.choices[0] &&
-    data.choices[0].message &&
-    typeof data.choices[0].message.content === "string"
-      ? data.choices[0].message.content
-      : "";
+  const content = pickContent(data);
   return { status: 200, body: { content, model, url: egress.body.url } };
 }
 
