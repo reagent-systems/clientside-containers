@@ -6,23 +6,27 @@ import { DEFAULT_AGENT_POLICY_YAML, parsePolicy } from "@/lib/policy";
 import { saveContainer } from "@/lib/containers-db";
 import type { AgentTranscriptLine, Container, ContainerPreview } from "@/lib/container";
 import {
+  formatProviderList,
+  formatReleaseList,
   formatSkillLine,
   formatToolLine,
+  getHermesProvider,
+  getHermesRelease,
   HERMES_BANNER,
-  HERMES_BUILD_DATE,
   HERMES_CADUCEUS,
   HERMES_DEFAULT_MODEL,
   HERMES_EXTRA_TOOLSET_COUNT,
   HERMES_HELP,
+  HERMES_PROVIDERS,
+  HERMES_RELEASES,
   HERMES_SKILL_COUNT,
   HERMES_SKILLSETS,
   HERMES_TIP,
   HERMES_TOOL_COUNT,
   HERMES_TOOLSETS,
-  HERMES_UPSTREAM,
   HERMES_VENDOR,
-  HERMES_VERSION,
   newHermesSessionId,
+  parseHermesModelArg,
 } from "@/lib/hermes";
 import styles from "./HermesTerminal.module.css";
 
@@ -40,6 +44,8 @@ interface HermesRuntimeSettings {
   apiHost: string;
   apiPath: string;
   quiet: boolean;
+  providerId: string;
+  releaseId: string;
 }
 
 function lineId(): string {
@@ -56,12 +62,16 @@ function elapsedLabel(startedAt: number): string {
 
 function readHermesSettings(container: Container): HermesRuntimeSettings {
   const s = container.settings;
+  const provider = getHermesProvider(s.hermesProvider);
+  const release = getHermesRelease(s.hermesReleaseId);
   return {
-    model: s.hermesModel || HERMES_DEFAULT_MODEL,
+    model: s.hermesModel || provider.defaultModel || HERMES_DEFAULT_MODEL,
     apiKey: s.hermesApiKey || "",
-    apiHost: s.hermesApiHost || "api.openai.com",
-    apiPath: s.hermesApiPath || "/v1/chat/completions",
+    apiHost: s.hermesApiHost || provider.host,
+    apiPath: s.hermesApiPath || provider.path,
     quiet: Boolean(s.hermesQuiet),
+    providerId: s.hermesProvider || provider.id,
+    releaseId: release.id,
   };
 }
 
@@ -104,6 +114,8 @@ export function HermesTerminal({
   });
 
   const workspacePath = "/workspace";
+  const release = getHermesRelease(runtime.releaseId);
+  const provider = getHermesProvider(runtime.providerId);
 
   const callWorker = useCallback((payload: { method: string; path: string; body?: unknown }) => {
     const worker = workerRef.current;
@@ -129,6 +141,8 @@ export function HermesTerminal({
           hermesApiKey: rt.apiKey,
           hermesApiHost: rt.apiHost,
           hermesApiPath: rt.apiPath,
+          hermesProvider: rt.providerId,
+          hermesReleaseId: rt.releaseId,
           hermesQuiet: rt.quiet,
           hermesSessionId: sessionId.current,
         },
@@ -233,27 +247,94 @@ export function HermesTerminal({
         case "status": {
           const up = elapsedLabel(startedAt.current);
           const rt = runtimeRef.current;
+          const rel = getHermesRelease(rt.releaseId);
+          const prov = getHermesProvider(rt.providerId);
           append(
             "out",
             [
-              `Hermes Agent v${HERMES_VERSION} (${HERMES_BUILD_DATE})`,
+              `Hermes Agent v${rel.version} (${rel.buildDate})`,
+              `provider: ${prov.id} (${prov.label})`,
               `model: ${rt.model} · ${HERMES_VENDOR}`,
               `session: ${sessionId.current}`,
               `path: ${workspacePath}`,
               `api: ${rt.apiHost}${rt.apiPath}`,
-              `key: ${rt.apiKey ? "set" : "missing"}`,
+              `key: ${rt.apiKey ? "set" : prov.allowEmptyKey ? "optional" : "missing"}`,
               `uptime: ${up}`,
               `worker: ${ready ? "ready" : "booting"}`,
             ].join("\n"),
           );
           return;
         }
-        case "model": {
+        case "provider": {
           if (!arg) {
-            append("out", `model: ${runtimeRef.current.model}`);
+            append("out", formatProviderList(runtimeRef.current.providerId));
             return;
           }
-          updateRuntime({ model: arg }, `model set to ${arg}`);
+          const id = arg.toLowerCase();
+          const next = HERMES_PROVIDERS.find((p) => p.id === id);
+          if (!next) {
+            append(
+              "err",
+              `unknown provider: ${arg}. Try /provider for the list (${HERMES_PROVIDERS.map((p) => p.id).join(", ")}).`,
+            );
+            return;
+          }
+          updateRuntime(
+            {
+              providerId: next.id,
+              apiHost: next.host,
+              apiPath: next.path,
+              model: next.defaultModel,
+            },
+            `provider set to ${next.id} (${next.label}) · model ${next.defaultModel}`,
+          );
+          if (next.note) append("sys", next.note);
+          return;
+        }
+        case "model": {
+          if (!arg) {
+            const rt = runtimeRef.current;
+            append("out", `model: ${rt.model}\nprovider: ${rt.providerId}`);
+            return;
+          }
+          const parsed = parseHermesModelArg(arg);
+          if (!parsed.model) {
+            append("err", "Usage: /model <name> or /model provider:model");
+            return;
+          }
+          if (parsed.providerId) {
+            const next = getHermesProvider(parsed.providerId);
+            updateRuntime(
+              {
+                providerId: next.id,
+                apiHost: next.host,
+                apiPath: next.path,
+                model: parsed.model,
+              },
+              `model set to ${parsed.model} via ${next.id}`,
+            );
+            return;
+          }
+          updateRuntime({ model: parsed.model }, `model set to ${parsed.model}`);
+          return;
+        }
+        case "version": {
+          if (!arg) {
+            append("out", formatReleaseList(runtimeRef.current.releaseId));
+            return;
+          }
+          const next = HERMES_RELEASES.find((r) => r.id === arg || r.version === arg);
+          if (!next) {
+            append(
+              "err",
+              `unknown release: ${arg}. Try /version for the list (${HERMES_RELEASES.map((r) => r.id).join(", ")}).`,
+            );
+            return;
+          }
+          updateRuntime(
+            { releaseId: next.id },
+            `Hermes Agent release set to v${next.version} (${next.buildDate})`,
+          );
           return;
         }
         case "key": {
@@ -275,12 +356,14 @@ export function HermesTerminal({
           }
           try {
             const u = new URL(arg.includes("://") ? arg : `https://${arg}`);
+            const path = u.pathname === "/" ? "/v1/chat/completions" : u.pathname;
             updateRuntime(
               {
                 apiHost: u.hostname,
-                apiPath: u.pathname === "/" ? "/v1/chat/completions" : u.pathname,
+                apiPath: path,
+                providerId: "custom",
               },
-              `base set to https://${u.hostname}${u.pathname === "/" ? "/v1/chat/completions" : u.pathname}`,
+              `base set to https://${u.hostname}${path} (provider: custom)`,
             );
           } catch {
             append("err", "invalid base URL");
@@ -319,7 +402,8 @@ export function HermesTerminal({
   const sendChat = useCallback(
     async (text: string) => {
       const rt = runtimeRef.current;
-      if (!rt.apiKey) {
+      const prov = getHermesProvider(rt.providerId);
+      if (!rt.apiKey && !prov.allowEmptyKey) {
         append("err", "No API key. Set one with /key <token>, then send your message again.");
         return;
       }
@@ -349,6 +433,7 @@ export function HermesTerminal({
             path: rt.apiPath,
             model: rt.model,
             apiKey: rt.apiKey,
+            allowEmptyKey: Boolean(prov.allowEmptyKey),
             messages,
           },
         });
@@ -406,7 +491,7 @@ export function HermesTerminal({
             <pre className={`${styles.banner} overflow-x-auto whitespace-pre`}>{HERMES_BANNER}</pre>
             <div className={`${styles.panel} mt-3`}>
               <div className={styles.panelTitle}>
-                Hermes Agent v{HERMES_VERSION} ({HERMES_BUILD_DATE}) · upstream {HERMES_UPSTREAM}
+                Hermes Agent v{release.version} ({release.buildDate}) · upstream {release.upstream}
               </div>
               <div className="grid gap-4 p-3 md:grid-cols-[220px_1fr]">
                 <div>
@@ -417,6 +502,9 @@ export function HermesTerminal({
                     <div>
                       <span className={styles.accent}>{runtime.model}</span>
                       <span className="text-gray-600"> · {HERMES_VENDOR}</span>
+                    </div>
+                    <div className="text-gray-600">
+                      provider: {provider.id}
                     </div>
                     <div className="text-gray-600">{workspacePath}</div>
                     <div className="text-gray-600">Session: {sessionId.current}</div>
@@ -491,6 +579,8 @@ export function HermesTerminal({
         <div className="flex items-center gap-2 font-mono text-[13px]">
           <span className={styles.accent}>$</span>
           <span className={styles.accent}>{runtime.model}</span>
+          <span className="text-gray-600">|</span>
+          <span className="text-gray-500">{provider.id}</span>
           <span className="text-gray-600">|</span>
           <span className="text-gray-500">ctx --</span>
           <span className="text-gray-600">|</span>

@@ -121,19 +121,22 @@ async function agentChat(body) {
   const path = String((body && body.path) || "/v1/chat/completions");
   const model = String((body && body.model) || "gpt-4o-mini");
   const apiKey = String((body && body.apiKey) || "");
+  const allowEmptyKey = Boolean(body && body.allowEmptyKey);
   const messages = Array.isArray(body && body.messages) ? body.messages : [];
 
   if (!host) return { status: 400, body: { error: "host is required" } };
-  if (!apiKey) return { status: 400, body: { error: "apiKey is required" } };
+  if (!apiKey && !allowEmptyKey) return { status: 400, body: { error: "apiKey is required" } };
+
+  const headers = {
+    "content-type": "application/json",
+  };
+  if (apiKey) headers.authorization = `Bearer ${apiKey}`;
 
   const egress = await performEgress({
     host,
     path,
     method: "POST",
-    headers: {
-      authorization: `Bearer ${apiKey}`,
-      "content-type": "application/json",
-    },
+    headers,
     body: { model, messages },
   });
 

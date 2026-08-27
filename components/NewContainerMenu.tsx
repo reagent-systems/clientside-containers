@@ -1,13 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { TIERS, type ContainerTier } from "@/lib/container";
+import { TIERS, type ContainerSettings, type ContainerTier } from "@/lib/container";
 import { AGENT_PRESETS, agentPolicyRules } from "@/lib/agents";
 import { OS_IMAGES } from "@/lib/os-images";
 import { CONFIGS } from "@/lib/configs";
+import { HERMES_RELEASES, latestHermesRelease } from "@/lib/hermes";
 
 interface Props {
-  onCreate: (tier: ContainerTier, selectionId: string) => void;
+  onCreate: (
+    tier: ContainerTier,
+    selectionId: string,
+    settingsPatch?: Partial<ContainerSettings>,
+  ) => void;
   onClose: () => void;
 }
 
@@ -17,9 +22,18 @@ export function NewContainerMenu({ onCreate, onClose }: Props) {
   const [agentId, setAgentId] = useState(AGENT_PRESETS[0].id);
   const [configId, setConfigId] = useState(CONFIGS[0].id);
   const [imageId, setImageId] = useState(OS_IMAGES[0].id);
+  const [hermesReleaseId, setHermesReleaseId] = useState(latestHermesRelease().id);
 
   const selectionFor = (tier: ContainerTier) =>
     tier === "agent" ? agentId : tier === "app" ? configId : imageId;
+
+  function create(tier: ContainerTier) {
+    const patch =
+      tier === "agent" && selectionFor(tier) === "hermes"
+        ? { hermesReleaseId }
+        : undefined;
+    onCreate(tier, selectionFor(tier), patch);
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -50,7 +64,7 @@ export function NewContainerMenu({ onCreate, onClose }: Props) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => onCreate(tier, selectionFor(tier))}
+                  onClick={() => create(tier)}
                   className="btn-primary shrink-0"
                 >
                   Create
@@ -71,6 +85,20 @@ export function NewContainerMenu({ onCreate, onClose }: Props) {
                       </option>
                     ))}
                   </select>
+                  {agentId === "hermes" && (
+                    <select
+                      className="input mt-2"
+                      value={hermesReleaseId}
+                      onChange={(e) => setHermesReleaseId(e.target.value)}
+                      aria-label="Hermes Agent version"
+                    >
+                      {HERMES_RELEASES.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.label} — {r.blurb}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   <p className="mt-2 text-copy-13 text-gray-700">
                     {AGENT_PRESETS.find((a) => a.id === agentId)?.blurb} Built on{" "}
                     <a className="link" href="https://github.com/NVIDIA/NemoClaw" target="_blank" rel="noreferrer">

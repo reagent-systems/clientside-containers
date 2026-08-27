@@ -33,6 +33,13 @@ The [autonomous daily loop](./docs/autonomous-loop.md) adds an entry under
 
 ### Added
 
+- Hermes Agent defaults to the current upstream release (**v0.20.6 / v2026.8.27**)
+  and keeps **v0.10.0** selectable. New Container shows a version picker for
+  Hermes; in-session `/version` switches the splash. `/provider` lists and
+  switches OpenAI-compatible inference backends (OpenRouter, Nous, xAI, …);
+  `/model provider:model` works the same way as the Hermes CLI. The Hermes
+  preset allowlist includes every bundled provider host so switches are not
+  policy-denied.
 - The New Container dialog's agent preset picker shows the network policy a
   preset will get before you create it — every allowed host and method,
   updating live as you switch presets.
