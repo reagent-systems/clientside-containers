@@ -98,11 +98,16 @@ components/NewContainerMenu.tsx tier picker
 components/runtime/
   EmulatorScreen.tsx           v86 (app + mini-OS)
   AgentConsole.tsx             agent tier: policy editor + API console
+  HermesTerminal.tsx           Hermes Agent CLI UI
+  ClaudeCodeTerminal.tsx       Claude Code CLI UI
+  GeminiCliTerminal.tsx        Gemini CLI UI
+  AgentCliTerminal.tsx         shared CLI terminal shell
 lib/
   container.ts                 model, tiers, bottled apps
   containers-db.ts             IndexedDB persistence
   policy.ts                    OpenShell policy: parse/serialize/evaluate
   v86-runtime.ts               load + boot the guest
+  hermes.ts / claude-code.ts / gemini-cli.ts   CLI catalogs
 public/v86/                    engine, BIOS, Linux bzImage
 public/workers/                agent worker (headless-worker.js)
 test/                          Vitest unit tests for the lib/ logic

@@ -50,14 +50,14 @@ export const AGENT_PRESETS: AgentPreset[] = [
     id: "claude-code",
     label: "Claude Code",
     vendor: "Anthropic",
-    blurb: "Anthropic's coding agent. Egress limited to the Anthropic API.",
+    blurb: "Claude Code terminal — banner, slash commands, Anthropic Messages API chat.",
     apiHosts: ["api.anthropic.com"],
   },
   {
     id: "gemini-cli",
     label: "Gemini CLI",
     vendor: "Google",
-    blurb: "Google's Gemini command-line agent.",
+    blurb: "Gemini CLI terminal — banner, /model /tools, Google OpenAI-compatible chat.",
     apiHosts: ["generativelanguage.googleapis.com", "oauth2.googleapis.com"],
   },
   {

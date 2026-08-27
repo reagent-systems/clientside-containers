@@ -5,6 +5,8 @@ import { TIERS, type Container, type ContainerPreview } from "@/lib/container";
 import { EmulatorScreen } from "./runtime/EmulatorScreen";
 import { AgentConsole } from "./runtime/AgentConsole";
 import { HermesTerminal } from "./runtime/HermesTerminal";
+import { ClaudeCodeTerminal } from "./runtime/ClaudeCodeTerminal";
+import { GeminiCliTerminal } from "./runtime/GeminiCliTerminal";
 
 interface Props {
   container: Container;
@@ -13,6 +15,22 @@ interface Props {
   onPreview: (preview: ContainerPreview) => void;
   onContainerChange?: (container: Container) => void;
 }
+
+type CliAgentKind = "hermes" | "claude-code" | "gemini-cli";
+
+function cliAgentKind(container: Container): CliAgentKind | null {
+  if (container.tier !== "agent") return null;
+  if (container.agentId === "hermes") return "hermes";
+  if (container.agentId === "claude-code") return "claude-code";
+  if (container.agentId === "gemini-cli") return "gemini-cli";
+  return null;
+}
+
+const CLI_STAGE: Record<CliAgentKind, { title: string; badge: string }> = {
+  hermes: { title: "ollama launch hermes", badge: "Hermes Agent" },
+  "claude-code": { title: "claude", badge: "Claude Code" },
+  "gemini-cli": { title: "gemini", badge: "Gemini CLI" },
+};
 
 export function ContainerStage({ container, onClose, onStatus, onPreview, onContainerChange }: Props) {
   useEffect(() => {
@@ -23,7 +41,8 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const isHermes = container.tier === "agent" && container.agentId === "hermes";
+  const cli = cliAgentKind(container);
+  const stage = cli ? CLI_STAGE[cli] : null;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gray-alpha-800">
@@ -40,9 +59,9 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
             <span className="h-3 w-3 rounded-full bg-gray-400" />
           </div>
           <span className="text-heading-14 text-gray-1000">
-            {isHermes ? "ollama launch hermes" : container.name}
+            {stage ? stage.title : container.name}
           </span>
-          <span className="badge">{isHermes ? "Hermes Agent" : TIERS[container.tier].label}</span>
+          <span className="badge">{stage ? stage.badge : TIERS[container.tier].label}</span>
         </div>
         <button type="button" onClick={onClose} className="btn-tertiary btn-small">
           Close
@@ -50,8 +69,22 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
       </header>
       <div className="flex-1 overflow-hidden bg-black">
         {container.tier === "agent" ? (
-          isHermes ? (
+          cli === "hermes" ? (
             <HermesTerminal
+              container={container}
+              onStatus={onStatus}
+              onPreview={onPreview}
+              onContainerChange={onContainerChange}
+            />
+          ) : cli === "claude-code" ? (
+            <ClaudeCodeTerminal
+              container={container}
+              onStatus={onStatus}
+              onPreview={onPreview}
+              onContainerChange={onContainerChange}
+            />
+          ) : cli === "gemini-cli" ? (
+            <GeminiCliTerminal
               container={container}
               onStatus={onStatus}
               onPreview={onPreview}
@@ -64,7 +97,7 @@ export function ContainerStage({ container, onClose, onStatus, onPreview, onCont
           <EmulatorScreen container={container} onStatus={onStatus} onPreview={onPreview} />
         )}
       </div>
-      {!isHermes && (
+      {!cli && (
         <footer className="border-t border-gray-alpha-400 bg-background-100 px-4 py-1.5 text-center text-copy-13 text-gray-700">
           {container.tier === "agent"
             ? "OpenShell-style agent runtime — API calls and policy egress decisions."
