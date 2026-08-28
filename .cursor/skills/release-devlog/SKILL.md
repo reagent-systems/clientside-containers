@@ -77,37 +77,58 @@ Use Cursor's built-in **`GenerateImage`** tool (`cursor` namespace).
 
 ### House style (every diagram)
 
-- **Aspect ratio:** `16:9`
-- **Look:** flat vector, educational poster, white or very light background
-- **Layout:** rounded boxes, soft shadows, labeled arrows, short labels inside boxes
-- **Title:** one clear title at the top
-- **Typography:** legible sans-serif; no tiny unreadable text
-- **Forbidden:** privacy / "local" / "never leaves your device" reassurance copy,
-  fake UI chrome, watermarks, photorealistic clutter
+Match **`public/og.png`** — the product social card. Pass it as
+`reference_image_paths: ["/workspace/public/og.png"]` (or the repo-relative
+path when not on Cloud) on every `GenerateImage` call.
+
+| Token | Value |
+| --- | --- |
+| Background | Near-black `#0a0a0a` with a faint isometric grid |
+| Accent | Neon electric blue `#0070f3` / `#3291ff` with soft glow |
+| Primary text | White `#ededed` |
+| Secondary text | Muted gray `#a1a1a1` |
+| Motif | Isometric wireframe cubes; `>_` on the top face; padlock on a side face |
+| Active vs quiet | Active steps: blue stroke + glow. Quiet steps: thin dark-gray wireframe |
+| Typography | Geometric sans-serif (Geist / Inter-like) |
+| Aspect ratio | `16:9` (closest GenerateImage ratio to the OG’s 1536×1024) |
+
+- **Layout:** isometric cubes + thin neon-blue arrows; short labels under each stage
+- **Title:** one clear white title at the top
+- **Forbidden:** white/cream backgrounds; teal/cyan/lime accent palettes;
+  colorful flat icon cards; privacy / "local" / "never leaves your device"
+  reassurance copy; fake UI chrome; watermarks; photorealistic clutter
+
+Also see `design.md` / `app/globals.css` for the same dark token set.
 
 ### Standard set (pick 2–4)
 
 | Filename | Purpose |
 | --- | --- |
-| `devlog-<topic>-overview.png` | End-to-end architecture (boxes + arrows) |
+| `devlog-<topic>-overview.png` | End-to-end architecture (cubes + arrows) |
 | `devlog-<topic>-sequence.png` | Numbered boot or request flow |
-| `devlog-<topic>-before-after.png` | Side-by-side or top/bottom comparison |
+| `devlog-<topic>-before-after.png` | Side-by-side: dim gray cubes vs glowing blue cubes |
 | `devlog-<topic>-detail.png` | Optional zoom on one tricky subsystem |
 
 ### Prompt skeleton
 
 ```
-Generate a 16:9 flat vector technical diagram for a developer blog.
-White background, rounded rectangles, soft shadows, labeled arrows, title at top.
-No privacy or "runs locally" marketing text.
+Generate a 16:9 technical diagram for clientside-containers.
+Match the attached brand OG image exactly in visual language.
+
+BRAND: near-black #0a0a0a background, subtle isometric grid,
+neon electric blue #0070f3 glow accents, white #ededed titles,
+gray #a1a1a1 captions, geometric sans-serif.
+Motif: isometric wireframe cubes with >_ prompts and padlocks.
+Active = blue glow; quiet = dark-gray wireframe.
+No teal/lime/white background. No privacy marketing.
 
 Title: "<Title>"
 
 Show:
-1. <box A> → <box B> → …
-2. <key labels and short annotations>
+1. <stage A> → <stage B> → …
+2. <short captions>
 
-Style: clean educational poster, high contrast, readable labels.
+Pass reference_image_paths: public/og.png
 ```
 
 ### Save into the repo
