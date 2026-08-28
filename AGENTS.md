@@ -58,7 +58,8 @@ When a user-visible feature merges to `main`, follow
 [**.cursor/skills/release-devlog/SKILL.md**](./.cursor/skills/release-devlog/SKILL.md)
 for the docs-only release pass:
 
-1. **GenerateImage** — 2–4 flat-vector architecture drawings (`cursor` namespace).
+1. **GenerateImage** — 2–4 architecture drawings on-brand with `public/og.png`
+   (dark isometric cubes, neon blue glow; see release-devlog skill).
 2. **walkthrough-artifacts** — screen recording + screenshot of the real behavior.
 3. **Devlog** — `docs/devlog/YYYY-MM-DD-<topic>.md` in simplified English.
 4. **Patch bump** — `package.json`, `CHANGELOG.md`, `docs/devlog/README.md`.
