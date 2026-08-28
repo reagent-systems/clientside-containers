@@ -133,6 +133,27 @@ fix(agent): keep the console scrolled to the newest line
 
 A maintainer reviews the pull request and merges it.
 
+## Release devlog (notable ships)
+
+After a notable feature merges, open a **docs-only** follow-up pull request
+that explains how it works. Agents and maintainers follow
+[`.cursor/skills/release-devlog/SKILL.md`](./.cursor/skills/release-devlog/SKILL.md).
+
+That pipeline produces:
+
+1. A devlog post under `docs/devlog/` (simplified technical English).
+2. Architecture drawings via Cursor **GenerateImage**, committed under
+   `docs/images/devlog/`.
+3. Walkthrough screenshots and screen recordings (see the walkthrough-artifacts
+   skill in Cursor Cloud).
+4. A patch version bump in `package.json` and a matching `CHANGELOG.md` section.
+
+Split feature code and release docs when you can: ship the capability in one
+version, then document it in the next patch (for example v0.2.0 feature,
+v0.2.1 devlog). See
+[`docs/devlog/2026-08-27-webcontainer-clis.md`](./docs/devlog/2026-08-27-webcontainer-clis.md)
+for the reference post.
+
 ## How the automation treats your pull request
 
 The repository runs an autonomous daily loop. See

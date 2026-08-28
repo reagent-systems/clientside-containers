@@ -52,6 +52,19 @@ Run this loop for every change. Keep changes small and shippable.
    loop (broken build, dead code, scope creep).
 10. **Repeat.**
 
+## Release devlog (after a notable ship)
+
+When a user-visible feature merges to `main`, follow
+[**.cursor/skills/release-devlog/SKILL.md**](./.cursor/skills/release-devlog/SKILL.md)
+for the docs-only release pass:
+
+1. **GenerateImage** — 2–4 flat-vector architecture drawings (`cursor` namespace).
+2. **walkthrough-artifacts** — screen recording + screenshot of the real behavior.
+3. **Devlog** — `docs/devlog/YYYY-MM-DD-<topic>.md` in simplified English.
+4. **Patch bump** — `package.json`, `CHANGELOG.md`, `docs/devlog/README.md`.
+
+Prefer two pull requests: feature first, devlog second (see v0.2.0 → v0.2.1).
+
 ## The daily loop runs this automatically
 
 A scheduled session runs this loop once a day, on its own. It spends up to two
@@ -112,7 +125,9 @@ public/coi-serviceworker.js    COOP/COEP polyfill for WebContainer
 test/                          Vitest unit tests for the lib/ logic
 scripts/check-static-export.sh guards the export's runtime assets + base path
 docs/autonomous-loop.md        specification for the daily self-improvement loop
+docs/devlog/                   release posts (how shipped features work)
 docs/loop-log.md               one row per cycle of that loop
+.cursor/skills/release-devlog/ pipeline: drawings, videos, devlog, version bump
 .github/workflows/ci.yml       the gate: typecheck, lint, test, both builds
 .github/workflows/auto-merge.yml merges an `automated` PR once CI is green
 ```
